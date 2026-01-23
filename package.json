@@ -1,14 +1,15 @@
 {
-  "name": "yt-trimmer",
-  "version": "1.0.3",
-  "description": "To download section (part) of YouTube's video",
-  "author": "Mayk Brito",
+  "name": "ngeklip",
+  "version": "2.0.0",
+  "description": "Clip the YouTube's video",
+  "author": "Gilang Pambudi",
   "license": "MIT",
   "scripts": {
     "trim": "node src/actions/single-part.js",
     "trimall": "node src/actions/multiple-parts.js",
     "start": "node src/server/server.js",
-    "dev": "node src/server/server.js && npx tailwindcss -i ./public/input.css -o ./public/style.css --watch",
+    "watch:css": "npx tailwindcss -i ./public/input.css -o ./public/style.css --watch",
+    "dev": "concurrently \"npm:start\" \"npm:run watch:css\"",
     "build": "npx tailwindcss -i ./public/input.css -o ./public/style.css"
   },
   "dependencies": {
@@ -16,5 +17,8 @@
     "express": "^4.17.1",
     "readline-sync": "^1.4.10",
     "tailwindcss": "^3.4.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

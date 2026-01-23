@@ -1,107 +1,233 @@
 <!DOCTYPE html>
-<html lang="pt_BR">
+<html lang="en" class="dark">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YouTube Video Cropper</title>
-  <link rel="stylesheet" href="https://unpkg.com/franken-ui-releases@0.0.12/dist/slate.min.css" />
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/js/uikit.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/uikit@3.20.8/dist/js/uikit-icons.min.js"></script>
+  <title>Ngeklip Video</title>
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cline x1='20' y1='4' x2='8.12' y2='15.88'/%3E%3Cline x1='14.47' y1='14.48' x2='20' y2='20'/%3E%3Cline x1='8.12' y1='8.12' x2='12' y2='12'/%3E%3C/svg%3E">
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- YouTube API -->
   <script src="https://www.youtube.com/iframe_api"></script>
+
+  <!-- Styles -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="dark uk-background-default">
-  <div class="mt-4 container mx-auto px-4 max-w-xl">
-    <section class="uk-card uk-card-body uk-card-default mt-4">
 
-      <div class="flex justify-between items-center">
+<body
+  class="bg-background text-foreground min-h-screen flex items-center justify-center p-4 font-sans antialiased selection:bg-primary selection:text-primary-foreground">
 
-      <h1 class="text-2xl">YouTube Video Cropper</h1>
+  <div class="w-full max-w-6xl space-y-4">
 
-      <!-- This is a button toggling the modal -->
-      <button
-        type="button"
-        uk-toggle="target: #modal-example"
-        uk-icon="question"
-      >
-        
-      </button>
-      </div>
-
-    </section>
-
-    <div class="uk-card uk-card-body uk-card-default mt-4">
-      <div class="flex gap-2">
-        <input 
-          class="uk-input"
-          id="inputVideo" 
-          type="url" 
-          placeholder="Youtube Video ID" />
-        <br />
-        <button class="uk-button uk-button-default" id="loadVideo">Load</button>
-      </div>
-    </div>
-
-    <div class="uk-card uk-card-body uk-card-default mt-4">
-      <video
-        id="youtubeVideo"
-        class="w-full aspect-video youtube-video"
-        data-yt=""
-        controls
-      ></video>
-
-      <div class="flex gap-4 mt-4 items-center">
-        <button id="btnSetIn" class="uk-button uk-button-default">In</button>
-        <span id="inputIn" style="color: greenyellow" contenteditable="">0.00</span>
-        <br />
-        <button id="btnSetOut" class="uk-button uk-button-default">Out</button>
-        <span id="inputOut" style="color: greenyellow" contenteditable="">0.00</span>
-        <button id="btnPlaySelection" class="uk-button uk-button-default ml-auto">Play</button>
-        <button id="btnDownloadSelection" class="uk-button uk-button-default">Download</button>
-      </div>  
-    </div>
-
-
-    <div class="uk-alert mt-4" uk-alert>
-      <a href class="uk-alert-close" uk-close></a>
-      <div class="uk-alert-description text-muted">
-        <div id="message">
-          Waiting for action ...
+    <!-- Header Card -->
+    <div class="rounded-xl border bg-card text-card-foreground shadow">
+      <div class="flex flex-col space-y-1.5 p-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i data-lucide="scissors" class="h-6 w-6 text-primary"></i>
+            <h3 class="font-semibold leading-none tracking-tight text-xl">Ngeklip Video</h3>
+          </div>
+          <!-- How to use modal trigger -->
+          <button id="helpBtn"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-9 w-9">
+            <i data-lucide="help-circle" class="h-5 w-5"></i>
+          </button>
         </div>
       </div>
     </div>
-    
-    <!-- This is the modal -->
-    <div id="modal-example" class="uk-flex-top" uk-modal>
-        <div class="uk-modal-body uk-margin-auto-vertical uk-modal-dialog text-white space-y-4">
-          <button class="uk-modal-close-default" type="button" uk-close></button>
-        <h2 class="uk-modal-title">Como usar?</h2>
-        <p>
-          1. Insira o ID do vídeo do Youtube no campo
-          <strong> Youtube Video ID </strong>
-        </p>
 
-        <p>
-          2. Com o vídeo carregado, utilize o botão <span style="color: greenyellow">In</span> para selecionar o ponto de início do corte
-        </p>
+    <!-- Input Area -->
+    <div class="rounded-xl border bg-card text-card-foreground shadow">
+      <div class="p-6">
+        <div class="flex w-full items-center space-x-2">
+          <div class="relative w-full">
+            <i data-lucide="link" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
+            <input id="inputVideo" type="url" placeholder="Paste YouTube Video ID or URL"
+              class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+          </div>
+          <button id="loadVideo"
+            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-4 py-2">
+            Load
+          </button>
+        </div>
+      </div>
+    </div>
 
-        <p>
-          3. Com o botão <span style="color: greenyellow">Out</span>, selecione o ponto final do corte
-        </p>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <p>
-          4. Clique no botão <span style="color: greenyellow">Play</span> para executar a seleção
-        </p>
+      <!-- Left Column: Video Player -->
+      <div class="lg:col-span-2 rounded-xl border bg-card text-card-foreground shadow overflow-hidden flex flex-col">
+        <div class="aspect-video w-full bg-black/10 relative flex-1">
+          <video id="youtubeVideo" class="w-full h-full object-cover" data-yt="" controls></video>
+        </div>
+      </div>
 
-        <p>
-          5. Caso esteja do seu agrado, clique no botão <span style="color: greenyellow">Download</span> para fazer o download da seleção
-        </p>
+      <!-- Right Column: Controls -->
+      <div class="lg:col-span-1 space-y-4">
+
+        <div class="rounded-xl border bg-card text-card-foreground shadow h-full">
+          <div class="p-6 space-y-6">
+            <div class="space-y-4">
+              <h4 class="font-medium leading-none flex items-center gap-2">
+                <i data-lucide="sliders" class="h-4 w-4"></i> Trim Controls
+              </h4>
+
+              <!-- Start Time -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-sm font-medium leading-none text-muted-foreground">Start Time</label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex w-full items-center gap-2">
+                    <input id="inputInHours" type="number" min="0" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="HH">
+                    <span class="text-muted-foreground">:</span>
+                    <input id="inputInMinutes" type="number" min="0" max="59" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="MM">
+                    <span class="text-muted-foreground">:</span>
+                    <input id="inputInSeconds" type="number" min="0" max="59" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="SS">
+                  </div>
+                </div>
+              </div>
+
+              <!-- End Time -->
+              <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-sm font-medium leading-none text-muted-foreground">End Time</label>
+                </div>
+                <div class="flex items-center gap-2">
+                  <div class="flex w-full items-center gap-2">
+                    <input id="inputOutHours" type="number" min="0" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="HH">
+                    <span class="text-muted-foreground">:</span>
+                    <input id="inputOutMinutes" type="number" min="0" max="59" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="MM">
+                    <span class="text-muted-foreground">:</span>
+                    <input id="inputOutSeconds" type="number" min="0" max="59" value="0"
+                      class="h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="SS">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filename Input -->
+            <div class="space-y-2 pt-4 border-t">
+              <label class="text-sm font-medium leading-none text-muted-foreground">File Name (optional)</label>
+              <div class="relative">
+                <i data-lucide="file-text" class="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground"></i>
+                <input id="inputFilename" type="text" placeholder="Leave empty for auto-generated name"
+                  class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pl-9 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2">
+              <button id="btnPlaySelection"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2">
+                <i data-lucide="play" class="mr-2 h-4 w-4"></i> Preview
+              </button>
+              <button id="btnDownloadSelection"
+                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-10 px-4 py-2">
+                <i data-lucide="download" class="mr-2 h-4 w-4"></i> Download
+              </button>
+            </div>
+            <div id="messageBox" class="rounded-lg border bg-card text-card-foreground shadow-sm">
+              <div class="p-4 flex items-center gap-3">
+                <i data-lucide="activity" class="h-4 w-4 text-muted-foreground"></i>
+                <span id="message" class="text-sm text-muted-foreground">Ready to trim.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status Message -->
+
+
       </div>
     </div>
 
   </div>
 
+  <!-- Help Modal (Simple Overlay) -->
+  <div id="helpModal"
+    class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-lg border bg-card text-card-foreground shadow-lg animate-accordion-down">
+      <div class="flex flex-col space-y-1.5 p-6">
+        <h3 class="font-semibold leading-none tracking-tight text-lg">How to use</h3>
+        <p class="text-sm text-muted-foreground">Follow these simple steps to trim your video.</p>
+      </div>
+      <div class="p-6 pt-0 space-y-4 text-sm">
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-medium">1</span>
+          <p>Paste the <strong>YouTube Video ID</strong> or URL above and click <strong>Load</strong>.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-medium">2</span>
+          <p>Set the <strong>Start Time</strong> in <strong>HH:MM:SS</strong>.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-medium">3</span>
+          <p>Set the <strong>End Time</strong> in <strong>HH:MM:SS</strong>.</p>
+        </div>
+        <div class="flex items-start gap-3">
+          <span
+            class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border bg-muted text-xs font-medium">4</span>
+          <p>Click <strong>Preview</strong> to check or <strong>Download</strong> to save the clip.</p>
+        </div>
+      </div>
+      <div class="flex items-center p-6 pt-0">
+        <button id="closeHelpBtn"
+          class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2 w-full">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script src="main.js"></script>
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Simple Help Modal Logic (since we removed UIKit)
+    const helpBtn = document.getElementById('helpBtn');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    const helpModal = document.getElementById('helpModal');
+
+    helpBtn.addEventListener('click', () => {
+      helpModal.classList.remove('hidden');
+    });
+
+    closeHelpBtn.addEventListener('click', () => {
+      helpModal.classList.add('hidden');
+    });
+
+    // Make message box visible when content changes (mutation observer or manual trigger, 
+    // but for now keeping it simple or just creating a wrapper that's always there but subtle?
+    // The original code toggles 'hidden' probably? 
+    // Let's just make sure the div exists. The original `main.js` might expect `#message` to be visible.
+    // I'll leave the message box visible but styled subtly.
+    document.getElementById('messageBox').classList.remove('hidden');
+  </script>
 </body>
+
 </html>

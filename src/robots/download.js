@@ -80,7 +80,7 @@ const downloadPart = async ({ url, from, to, filename }) => {
     const path = require('path')
     const fs = require('fs')
     const localYtDlp = path.resolve(__dirname, '../../bin/yt-dlp.exe')
-    const ytDlpCommand = fs.existsSync(localYtDlp) ? `"${localYtDlp}"` : 'yt-dlp'
+    const ytDlpCommand = (process.platform === 'win32' && fs.existsSync(localYtDlp)) ? `"${localYtDlp}"` : 'yt-dlp'
 
     // Create download directory if not exists
     const downloadDir = path.resolve(__dirname, '../../download')

@@ -102,7 +102,8 @@ const downloadPart = async ({ url, from, to, filename }) => {
     await exec(
       `${ytDlpCommand} "${url}" \
       --download-sections "${downloadSections}" \
-      -f "bestvideo+bestaudio/best" \
+      -f "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best[ext=mp4]/best" \
+      -S "res:1080" \
       --merge-output-format mp4 \
       --force-keyframes-at-cuts \
       -o "${fullOutputFilename}.%(ext)s"`

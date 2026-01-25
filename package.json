@@ -9,7 +9,7 @@
     "trimall": "node src/actions/multiple-parts.js",
     "start": "node src/server/server.js",
     "watch:css": "npx tailwindcss -i ./public/input.css -o ./public/style.css --watch",
-    "dev": "concurrently \"npm:start\" \"npm:run watch:css\"",
+    "dev": "concurrently \"npm:start\" \"npm:watch:css\"",
     "build": "npx tailwindcss -i ./public/input.css -o ./public/style.css"
   },
   "dependencies": {

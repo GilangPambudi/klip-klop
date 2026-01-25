@@ -1,61 +1,111 @@
-<h1 align="center">Download and trim some YouTube Video</h1>
-<p align="center"><img src="https://i.gyazo.com/47d07ad7f425ccd747b4f6c3fb483e51.gif"><br/>
-It will download and cut a youtube video, by adding start and end values, save it to root directory
-</p>
+# YouTube Trimmer (Ngeklip)
 
----
+A powerful and simple tool to download and trim YouTube videos, available as both a CLI (Command Line Interface) and a Web Application.
 
-## How to use it?
+![Project Demo](https://i.gyazo.com/47d07ad7f425ccd747b4f6c3fb483e51.gif)
 
-Clone this repo, go to repo folder, and install with `npm install`
+## 🚀 Features
 
-_Obs.: You need ffmpeg and yt-dlp in your machine_
+- **Download & Trim**: Select specific start and end times to clip parts of a YouTube video.
+- **Multiple Intervals**: Download multiple clips from a single video at once (CLI).
+- **Concatenation**: Option to automatically join multiple clips into a single video file.
+- **Dual Interface**: Use it via terminal or a modern web interface.
 
-## WEB
+## 📋 Prerequisites
 
-1. Start project with `npm start`
-2. Open your browser at http://localhost:3000/
-3. Follow page instructions
+Before running this project, ensure you have the following installed on your machine:
 
-## CLI
+1.  **Node.js**: [Download & Install](https://nodejs.org/)
+2.  **FFmpeg**: Required for video processing. [Download & Install](https://ffmpeg.org/download.html)
+3.  **yt-dlp**: Required for downloading YouTube videos. [Download & Install](https://github.com/yt-dlp/yt-dlp#installation)
 
-### Download single cut (part) of the video
+> **Note**: Make sure both `ffmpeg` and `yt-dlp` are available in your system's PATH.
 
-1. Start with `npm run trim`
-2. You will be prompted and will be asked for:
+## 🛠 Installation
 
-- `Youtube url` Youtube video url with http(s)
-- `Video starts in` When video start? format `HH:mm:ss.ms`
-- `Video ends in` When video will end? format `HH:mm:ss.ms`
-- `Filename` Filename that will be output. Don't need to provide .extension of file. If no filename `part.mp4` will be the filename.
+1.  **Clone the repository**
 
-3. When it's finished, the video will be saved at local project folder
+    ```bash
+    git clone https://github.com/maykbrito/trimmer-yt-npm.git
+    cd trimmer-yt-npm
+    ```
 
-### Download multiples parts (cuts) of the video
+2.  **Install dependencies**
+    ```bash
+    npm install
+    ```
 
-1. Go to src/actions/
-2. Edit multiple-parts.js
+## 💻 Usage
 
-```js
-const data = {
-  url: 'https://www.youtube.com/watch?v=gBmnB7BwSRA', // the Youtube video Url
-  intervals: [
-    // the parts of you want to cut
-    ['00:01:19', '00:01:40.200'],
-    ['00:04:30', '00:05:00']
-  ],
-  concat: true // If you want to concatenate (join) in a single final.mp4 file, leave it as true. If not, make it false
-}
-```
+### 🌐 Web Interface
 
-3. save your file
-4. run `npm run trimall`
+For a visual and interactive experience:
 
-## Tecnologies
+1.  **Start the development server**
 
-- node.js
-- readline-sync
-- youtube-dl
-- ffmpeg
-- webpack
-- sass
+    ```bash
+    npm run dev
+    ```
+
+    This command runs the Express server and Tailwind CSS watcher concurrently.
+
+2.  **Open in Browser**
+    Go to [http://localhost:3000](http://localhost:3000)
+
+3.  **Follow the UI instructions**:
+    - Enter the YouTube URL.
+    - Specify start and end timestamps.
+    - Click to process.
+
+### 🖥 CLI (Command Line Interface)
+
+#### Single Clip
+
+To download a single specific part of a video:
+
+1.  Run the command:
+    ```bash
+    npm run trim
+    ```
+2.  Follow the interactive prompts:
+    - **YouTube URL**: Paste the video link.
+    - **Start Time**: Format `HH:mm:ss.ms` (e.g., `00:01:30`).
+    - **End Time**: Format `HH:mm:ss.ms`.
+    - **Filename**: (Optional) Name of the output file.
+
+#### Multiple Clips
+
+To download multiple parts from the same video:
+
+1.  Open `src/actions/multiple-parts.js` in your editor.
+2.  Configure the `data` object:
+    ```javascript
+    const data = {
+      url: "https://www.youtube.com/watch?v=VIDEO_ID",
+      intervals: [
+        ["00:01:19", "00:01:40.200"], // Clip 1
+        ["00:04:30", "00:05:00"], // Clip 2
+      ],
+      concat: true, // Set to code if you want to merge all clips into one file
+    };
+    ```
+3.  Run the command:
+    ```bash
+    npm run trimall
+    ```
+
+## 🏗 Tech Stack
+
+- **Runtime**: Node.js
+- **Backend Framework**: Express.js
+- **Styling**: Tailwind CSS
+- **Core Processing**:
+  - `yt-dlp` (Video Downloading)
+  - `ffmpeg` (Video Trimming & Concatenation)
+- **Utilities**:
+  - `readline-sync` (CLI Prompts)
+  - `concurrently` (Dev Server)
+
+## 📄 License
+
+This project is licensed under the **MIT License**.

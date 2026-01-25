@@ -79,7 +79,8 @@ const playSelection = () => {
 
 const downloadSelection = () => {
   message.style.color = 'orange'
-  message.innerText = 'start converting video'
+  message.innerText = 'Starting new download...'
+  message.classList.add('animate-pulse')
 
   fetch('http://localhost:3000/download', {
     method: 'POST',
@@ -96,6 +97,7 @@ const downloadSelection = () => {
   })
     .then(response => response.json())
     .then(json => {
+      message.classList.remove('animate-pulse')
       if (json.includes('.mp4')) {
         message.style.color = 'greenyellow'
         message.innerText = 'Success!'
@@ -105,11 +107,26 @@ const downloadSelection = () => {
       }
 
       message.style.color = 'orangered'
-      message.innerText = result
+      message.innerText = JSON.stringify(json)
     }).catch(error => {
+      message.classList.remove('animate-pulse')
       message.style.color = 'orangered'
       message.innerText = 'Download error!'
     })
+}
+
+const openFile = (filename) => {
+  fetch('http://localhost:3000/open-file', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename })
+  })
+}
+
+const openFolder = () => {
+  fetch('http://localhost:3000/open-folder', {
+    method: 'POST'
+  })
 }
 
 // Actions
@@ -119,6 +136,8 @@ btnPlaySelection.onclick = () =>
   playSelection()
 btnDownloadSelection.onclick = () =>
   downloadSelection()
+btnOpenFolder.onclick = () =>
+  openFolder()
 
 const timeInputs = [
   inputInHours,

@@ -37,5 +37,20 @@ app.post('/download', async (req, res) => {
   }
 })
 
+app.post('/open-folder', (req, res) => {
+  const downloadDir = path.resolve(__dirname, '../../download')
+
+  // Windows specific command to open folder
+  const command = `explorer "${downloadDir}"`
+
+  require('child_process').exec(command, (error) => {
+    if (error) {
+      console.error('Error opening folder:', error)
+      return res.status(500).json({ error: 'Could not open folder' })
+    }
+    res.json({ success: true })
+  })
+})
+
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => console.log(`server is running on http://localhost:${PORT}/`))

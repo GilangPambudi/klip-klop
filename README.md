@@ -1,111 +1,77 @@
-# YouTube Trimmer (Ngeklip)
+# Ngeklip
 
-A powerful and simple tool to download and trim YouTube videos, available as both a CLI (Command Line Interface) and a Web Application.
+**Ngeklip** is a powerful, modern, and locally-hosted YouTube video downloader and trimmer. Built with the latest web technologies, it offers a seamless experience for downloading videos or clipping specific segments with precision.
 
-![Project Demo](https://i.gyazo.com/47d07ad7f425ccd747b4f6c3fb483e51.gif)
+## Features
 
-## 🚀 Features
+- **High Quality Downloads**: Download full YouTube videos in the best available quality.
+- **Precise Trimming**: Clip and trim videos with an intuitive timeline editor before downloading.
+- **Portable Binaries**: Comes with bundled `ffmpeg` and `yt-dlp` for hassle-free setup on Windows.
+- **Modern UI**: A beautiful, dark-themed interface built with **shadcn/ui** and **Tailwind CSS v4**.
+- **Local Performance**: Runs entirely on your machine for maximum privacy and speed.
 
-- **Download & Trim**: Select specific start and end times to clip parts of a YouTube video.
-- **Multiple Intervals**: Download multiple clips from a single video at once (CLI).
-- **Concatenation**: Option to automatically join multiple clips into a single video file.
-- **Dual Interface**: Use it via terminal or a modern web interface.
+## Installation
 
-## 📋 Prerequisites
+### Prerequisites
 
-Before running this project, ensure you have the following installed on your machine:
+Before you begin, ensure you have the following installed on your system:
 
-1.  **Node.js**: [Download & Install](https://nodejs.org/)
-2.  **FFmpeg**: Required for video processing. [Download & Install](https://ffmpeg.org/download.html)
-3.  **yt-dlp**: Required for downloading YouTube videos. [Download & Install](https://github.com/yt-dlp/yt-dlp#installation)
+- **Node.js**: [Download here](https://nodejs.org/) (Required to run the application).
 
-> **Note**: Make sure both `ffmpeg` and `yt-dlp` are available in your system's PATH.
+### Setup
 
-## 🛠 Installation
+1.  **Clone or Download** the repository to your local machine.
+2.  Navigate to the project folder.
+3.  That's it! The included launcher handles the rest.
 
-1.  **Clone the repository**
+## Usage
 
-    ```bash
-    git clone https://github.com/maykbrito/trimmer-yt-npm.git
-    cd trimmer-yt-npm
-    ```
+### Fast Start (Windows)
 
-2.  **Install dependencies**
+1.  Locate the `launcher.bat` file in the root directory.
+2.  Double-click `launcher.bat`.
+    - _First run:_ It will automatically install necessary dependencies (`npm install`). This may take a few minutes.
+    - _Subsequent runs:_ It will start the server immediately.
+3.  A console window will open, and the application will launch in your default web browser at `http://localhost:3000`.
+
+### Manual Start
+
+If you prefer using the command line:
+
+1.  Open a terminal in the project directory.
+2.  Install dependencies:
     ```bash
     npm install
     ```
-
-## 💻 Usage
-
-### 🌐 Web Interface
-
-For a visual and interactive experience:
-
-1.  **Start the development server**
-
+3.  Start the development server:
     ```bash
     npm run dev
     ```
+4.  Open `http://localhost:3000` in your browser.
 
-    This command runs the Express server and Tailwind CSS watcher concurrently.
+## Tech Stack
 
-2.  **Open in Browser**
-    Go to [http://localhost:3000](http://localhost:3000)
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Core Engines**:
+  - **ffmpeg**: For video processing and trimming.
+  - **yt-dlp**: For downloading YouTube content.
 
-3.  **Follow the UI instructions**:
-    - Enter the YouTube URL.
-    - Specify start and end timestamps.
-    - Click to process.
+## Project Structure
 
-### 🖥 CLI (Command Line Interface)
+- `/bin`: Contains portable executables (`ffmpeg`, `yt-dlp`) for Windows.
+- `/src`: Source code for the Next.js application.
+  - `/components`: Reusable UI components.
+  - `/app`: App Router pages and layouts.
+  - `/lib`: Utility functions and server-side logic.
+- `launcher.bat`: Windows automation script for easy startup.
 
-#### Single Clip
-
-To download a single specific part of a video:
-
-1.  Run the command:
-    ```bash
-    npm run trim
-    ```
-2.  Follow the interactive prompts:
-    - **YouTube URL**: Paste the video link.
-    - **Start Time**: Format `HH:mm:ss.ms` (e.g., `00:01:30`).
-    - **End Time**: Format `HH:mm:ss.ms`.
-    - **Filename**: (Optional) Name of the output file.
-
-#### Multiple Clips
-
-To download multiple parts from the same video:
-
-1.  Open `src/actions/multiple-parts.js` in your editor.
-2.  Configure the `data` object:
-    ```javascript
-    const data = {
-      url: "https://www.youtube.com/watch?v=VIDEO_ID",
-      intervals: [
-        ["00:01:19", "00:01:40.200"], // Clip 1
-        ["00:04:30", "00:05:00"], // Clip 2
-      ],
-      concat: true, // Set to code if you want to merge all clips into one file
-    };
-    ```
-3.  Run the command:
-    ```bash
-    npm run trimall
-    ```
-
-## 🏗 Tech Stack
-
-- **Runtime**: Node.js
-- **Backend Framework**: Express.js
-- **Styling**: Tailwind CSS
-- **Core Processing**:
-  - `yt-dlp` (Video Downloading)
-  - `ffmpeg` (Video Trimming & Concatenation)
-- **Utilities**:
-  - `readline-sync` (CLI Prompts)
-  - `concurrently` (Dev Server)
-
-## 📄 License
+## License
 
 This project is licensed under the **MIT License**.
+
+## Acknowledgements
+
+- This project is a fork of [yt-trimmer](https://github.com/maykbrito/yt-trimmer) by [Mayk Brito](https://github.com/maykbrito). Big thanks to him for the original idea and codebase!

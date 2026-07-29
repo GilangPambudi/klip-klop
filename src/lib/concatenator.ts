@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { execAsync } from "./runtime";
+import { streamTool } from "./runtime";
 
 /**
  * Scans the download directory for files matching 'part*.mp4',
@@ -33,26 +33,25 @@ export async function concatenateParts() {
 
   const outputFilename = path.join(downloadDir, "final.mp4");
 
-  // Resolve binaries
-  const binDir = path.resolve(process.cwd(), "bin");
-  const localFfmpeg = path.join(binDir, "ffmpeg.exe");
-  const isWin = process.platform === "win32";
-
-  const ffmpegCommand =
-    isWin && fs.existsSync(localFfmpeg) ? `"${localFfmpeg}"` : "ffmpeg";
-
-  // ffmpeg command
-  // -f concat -safe 0 -i mylist.txt -c copy -copyts final.mp4
-  const command = `${ffmpegCommand} -f concat -safe 0 -i "${listPath}" -c copy -copyts -y "${outputFilename}"`;
+  const args = [
+    "-f",
+    "concat",
+    "-safe",
+    "0",
+    "-i",
+    listPath,
+    "-c",
+    "copy",
+    "-copyts",
+    "-y",
+    outputFilename,
+  ];
 
   console.log("Extracted file list:");
   console.log(listContent);
-  console.log(`> Executing Concat: ${command}`);
 
   try {
-    const { stdout, stderr } = await execAsync(command);
-    console.log(stdout);
-    if (stderr) console.error(stderr);
+    await streamTool("ffmpeg", args);
     console.log(`> Concatenation complete: ${outputFilename}`);
 
     return "final.mp4";

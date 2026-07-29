@@ -4,9 +4,11 @@
 
 ## Features
 
-- **High Quality Downloads**: Download full YouTube videos in the best available quality.
+- **Resolution Picker**: Choose from the resolutions actually available for the loaded video.
+- **Smart Filenames**: Names are generated from the YouTube title, e.g. `My_Video_Title-75s-1080p.mp4`.
+- **Shareable Links**: Every download gets a tokenized link that works from any device on your network, and expires automatically after 24 hours.
 - **Precise Trimming**: Clip and trim videos with an intuitive timeline editor before downloading.
-- **Portable Binaries**: Comes with bundled `ffmpeg` and `yt-dlp` for hassle-free setup on Windows.
+- **Cross-Platform**: Runs on Windows and Linux.
 - **Modern UI**: A beautiful, dark-themed interface built with **shadcn/ui** and **Tailwind CSS v4**.
 - **Local Performance**: Runs entirely on your machine for maximum privacy and speed.
 
@@ -14,9 +16,19 @@
 
 ### Prerequisites
 
-Before you begin, ensure you have the following installed on your system:
+- **Node.js**: [Download here](https://nodejs.org/) (required to run the application).
+- **yt-dlp** and **ffmpeg**: resolved from `./bin` first, then from your `PATH`.
 
-- **Node.js**: [Download here](https://nodejs.org/) (Required to run the application).
+**Windows**: portable `yt-dlp.exe` and `ffmpeg.exe` in `./bin` are used automatically. Nothing else to install.
+
+**Linux**: install both tools system-wide:
+
+```bash
+sudo apt install ffmpeg
+pipx install yt-dlp   # or: sudo apt install yt-dlp
+```
+
+If either is missing, the app reports which tool it could not find along with the command to install it.
 
 ### Setup
 
@@ -34,18 +46,16 @@ Before you begin, ensure you have the following installed on your system:
     - _Subsequent runs:_ It will start the server immediately.
 3.  A console window will open, and the application will launch in your default web browser at `http://localhost:3000`.
 
-### Manual Start
-
-If you prefer using the command line:
+### Manual Start (Windows & Linux)
 
 1.  Open a terminal in the project directory.
 2.  Install dependencies:
     ```bash
-    npm install
+    pnpm install
     ```
 3.  Start the development server:
     ```bash
-    npm run dev
+    pnpm dev
     ```
 4.  Open `http://localhost:3000` in your browser.
 
@@ -61,7 +71,7 @@ If you prefer using the command line:
 
 ## Project Structure
 
-- `/bin`: Contains portable executables (`ffmpeg`, `yt-dlp`) for Windows.
+- `/bin`: Optional portable executables (`ffmpeg`, `yt-dlp`). Checked before `PATH`.
 - `/src`: Source code for the Next.js application.
   - `/components`: Reusable UI components.
   - `/app`: App Router pages and layouts.

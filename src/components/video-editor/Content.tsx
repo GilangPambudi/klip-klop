@@ -11,7 +11,7 @@ interface ContentProps {
 
 export function Content({ downloadedFilename, videoId, onClosePreview }: ContentProps) {
     return (
-        <Card className="flex-1 overflow-hidden bg-black p-0 border-0 flex items-center justify-center relative rounded-lg">
+        <Card className="aspect-video w-full overflow-hidden bg-black p-0 border-0 flex items-center justify-center relative rounded-lg lg:aspect-auto lg:flex-1">
             {downloadedFilename ? (
                 <video
                     src={`/api/video?file=${downloadedFilename}`}

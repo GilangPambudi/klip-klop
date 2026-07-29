@@ -1,5 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+
+export interface ActiveLink {
+  token: string;
+  file: string;
+  createdAt: number;
+  expiresAt: number;
+  size: number;
+}
 
 interface YouTubePlayer {
   loadVideoById: (id: string) => void;
@@ -41,12 +49,41 @@ export function useVideoEditor() {
   const [endM, setEndM] = useState("0");
   const [endS, setEndS] = useState("0");
 
-  const [filename, setFilename] = useState("");
   const [isDownloading, setIsDownloading] = useState(false);
+
+  // Video info from yt-dlp probe
+  const [title, setTitle] = useState("");
+  const [heights, setHeights] = useState<number[]>([]);
+  const [selectedHeight, setSelectedHeight] = useState<string>("");
+  const [isProbing, setIsProbing] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [recentLinks, setRecentLinks] = useState<ActiveLink[]>([]);
+  const [customFilename, setCustomFilename] = useState<string | null>(null);
 
   // Refs
   const playerRef = useRef<YouTubePlayer | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const refreshLinks = () =>
+    fetch("/api/links")
+      .then((res) => res.json())
+      .then((data) => setRecentLinks(data.links || []))
+      .catch(() => {
+        // Non-critical; the list just stays as-is.
+      });
+
+  // Opening the download folder only makes sense on the machine running the
+  // server, so hide it when the app is reached over the network.
+  const isLocalhost = useSyncExternalStore(
+    () => () => {},
+    () => ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname),
+    () => true,
+  );
+
+  useEffect(() => {
+    void refreshLinks();
+  }, []);
 
   const onPlayerStateChange = (event: { data: number }) => {
     setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
@@ -112,10 +149,52 @@ export function useVideoEditor() {
       if (newId !== videoId) {
         setVideoId(newId);
         setDownloadedFilename(null);
+        setDownloadUrl(null);
+        setCustomFilename(null);
         toast.success("Video loaded!");
+        probeVideo(url);
+
+        // On mobile the header pushes the player off-screen, so dismiss the
+        // keyboard and bring the video and its controls into view.
+        if (window.matchMedia("(max-width: 1023px)").matches) {
+          (document.activeElement as HTMLElement | null)?.blur();
+          requestAnimationFrame(() =>
+            contentRef.current?.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            }),
+          );
+        }
       }
     }
   };
+
+  const probeVideo = async (url: string) => {
+    setIsProbing(true);
+    setHeights([]);
+    try {
+      const res = await fetch("/api/info", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to read video info");
+
+      setTitle(data.title || "");
+      setHeights(data.heights || []);
+      setSelectedHeight(
+        data.heights?.length ? String(data.heights[0]) : "best",
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Probe failed";
+      toast.error(`Could not read video info: ${message}`);
+      setSelectedHeight("best");
+    } finally {
+      setIsProbing(false);
+    }
+  };
+
 
   const getSeconds = (h: string, m: string, s: string) => {
     return (
@@ -129,6 +208,38 @@ export function useVideoEditor() {
     const ss = (parseInt(s) || 0).toString().padStart(2, "0");
     return `${hh}:${mm}:${ss}`;
   };
+
+  const toUnderscore = (text: string) =>
+    text
+      .trim()
+      .replace(/[^A-Za-z0-9]+/g, "_")
+      .replace(/_{2,}/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+  // Title_With_Underscores-75s-1080p
+  const buildFilename = () => {
+    if (!title) return "";
+
+    const startSec = getSeconds(startH, startM, startS);
+    const endSec = getSeconds(endH, endM, endS);
+    const clipLength = endSec > startSec ? endSec - startSec : 0;
+
+    const duration = clipLength > 0 ? `${clipLength}s` : "full";
+    const res = selectedHeight && selectedHeight !== "best"
+      ? `${selectedHeight}p`
+      : "best";
+
+    return `${toUnderscore(title)}-${duration}-${res}`;
+  };
+
+  // Derived during render: the generated name tracks the title, trim range and
+  // resolution until the user types their own.
+  const filename = customFilename ?? buildFilename();
+
+  const handleFilenameChange = (value: string) => {
+    setCustomFilename(value);
+  };
+
 
   // Auto-pause
   useEffect(() => {
@@ -175,6 +286,7 @@ export function useVideoEditor() {
     }
 
     setIsDownloading(true);
+    setDownloadUrl(null);
     const finalFilename = filename.trim() || `clip-${Date.now()}`;
     const startStr = getformattedTime(startH, startM, startS);
     const endStr = getformattedTime(endH, endM, endS);
@@ -187,6 +299,7 @@ export function useVideoEditor() {
         start: startStr,
         end: endStr,
         filename: finalFilename,
+        height: selectedHeight === "best" ? undefined : Number(selectedHeight),
       }),
     }).then(async (res) => {
       const data = await res.json();
@@ -199,6 +312,8 @@ export function useVideoEditor() {
       success: (data) => {
         setIsDownloading(false);
         if (data.file) setDownloadedFilename(data.file);
+        if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
+        refreshLinks();
         return `Download complete: ${data.file}`;
       },
       error: (err) => {
@@ -253,6 +368,12 @@ export function useVideoEditor() {
       downloadedFilename,
       isDownloading,
       filename,
+      heights,
+      selectedHeight,
+      isProbing,
+      downloadUrl,
+      recentLinks,
+      isLocalhost,
       time: {
         start: { h: startH, m: startM, s: startS },
         end: { h: endH, m: endM, s: endS },
@@ -261,7 +382,8 @@ export function useVideoEditor() {
     setters: {
       setVideoUrl: handleUrlChange,
       setDownloadedFilename,
-      setFilename,
+      setFilename: handleFilenameChange,
+      setSelectedHeight,
       setStartH,
       setStartM,
       setStartS,
@@ -277,5 +399,6 @@ export function useVideoEditor() {
       handleInputFocus,
       syncCurrentTime,
     },
+    contentRef,
   };
 }

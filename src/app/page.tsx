@@ -2,8 +2,8 @@ import VideoEditor from "@/components/VideoEditor";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
+    <main className="min-h-screen bg-background flex items-start justify-center p-4 lg:h-screen lg:items-center">
+      <div className="w-full md:max-w-[90%] sm:max-w-full lg:h-full lg:max-h-[calc(100vh-2rem)]">
         <VideoEditor />
       </div>
     </main>

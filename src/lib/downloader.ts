@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { streamTool, YTDLP_COMMON_ARGS } from "./runtime";
+import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
 
 interface DownloadOptions {
   url: string;
@@ -92,10 +92,8 @@ export async function downloadPart({
     args.push("--download-sections", downloadSections);
   }
 
-  const binDir = path.resolve(process.cwd(), "bin");
-  if (fs.existsSync(binDir)) {
-    args.push("--ffmpeg-location", binDir);
-  }
+  // ponytail: resolveBinary already checks platform and falls back to system PATH
+  args.push("--ffmpeg-location", resolveBinary("ffmpeg").command);
 
   console.log(`> Downloading: ${url} [${from} - ${to}] @ ${height ?? "best"}`);
 

@@ -1,87 +1,106 @@
-# Ngeklip
+# Klip-Klop
 
-**Ngeklip** is a powerful, modern, and locally-hosted YouTube video downloader and trimmer. Built with the latest web technologies, it offers a seamless experience for downloading videos or clipping specific segments with precision.
+**Klip-Klop** is a locally hosted YouTube video downloader and trimmer. It can download full videos or create precise clips, then provide temporary share links to the results.
 
 ## Features
 
-- **Resolution Picker**: Choose from the resolutions actually available for the loaded video.
-- **Smart Filenames**: Names are generated from the YouTube title, e.g. `My_Video_Title-75s-1080p.mp4`.
-- **Shareable Links**: Every download gets a tokenized link that works from any device on your network, and expires automatically after 24 hours.
-- **Precise Trimming**: Clip and trim videos with an intuitive timeline editor before downloading.
+- **Resolution Picker**: Choose from the resolutions available for the loaded video.
+- **Smart Filenames**: Generate names from the video title, duration, and resolution.
+- **Temporary Share Links**: Share completed downloads on your network for a configurable period.
+- **Precise Trimming**: Set the exact start and end time for a clip.
 - **Cross-Platform**: Runs on Windows and Linux.
-- **Modern UI**: A beautiful, dark-themed interface built with **shadcn/ui** and **Tailwind CSS v4**.
-- **Local Performance**: Runs entirely on your machine for maximum privacy and speed.
+- **Local Processing**: Downloads and processing stay on your machine.
 
 ## Installation
 
 ### Prerequisites
 
-- **Node.js**: [Download here](https://nodejs.org/) (required to run the application).
-- **yt-dlp** and **ffmpeg**: resolved from `./bin` first, then from your `PATH`.
+- [Node.js](https://nodejs.org/)
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp/wiki/Installation)
+- [ffmpeg](https://ffmpeg.org/download.html)
 
-**Windows**: portable `yt-dlp.exe` and `ffmpeg.exe` in `./bin` are used automatically. Nothing else to install.
+Klip-Klop does not include `yt-dlp` or `ffmpeg`. Both commands must be installed separately and available on your system `PATH`.
 
-**Linux**: install both tools system-wide:
+#### Windows
 
-```bash
-sudo apt install ffmpeg
-pipx install yt-dlp   # or: sudo apt install yt-dlp
+Open PowerShell and install both tools:
+
+```powershell
+winget install yt-dlp
+winget install --id Gyan.FFmpeg -e
 ```
 
-If either is missing, the app reports which tool it could not find along with the command to install it.
+Open a new terminal after installation so the updated `PATH` is loaded.
+
+#### Linux (Debian/Ubuntu)
+
+```bash
+sudo apt update
+sudo apt install ffmpeg pipx
+pipx ensurepath
+pipx install yt-dlp
+```
+
+Open a new terminal after running `pipx ensurepath`.
+
+#### Verify the tools
+
+```bash
+ffmpeg -version
+yt-dlp --version
+```
+
+If either command is not found, fix your `PATH` before starting Klip-Klop.
+
+### Configuration
+
+Copy `.env.example` to `.env.local`, then change the retention period when needed:
+
+```dotenv
+DOWNLOAD_RETENTION_HOURS=24
+```
+
+The value is the number of hours before downloaded files and share links expire. It must be a positive number and defaults to `24` when omitted.
 
 ### Setup
 
-1.  **Clone or Download** the repository to your local machine.
-2.  Navigate to the project folder.
-3.  That's it! The included launcher handles the rest.
+1. Clone or download this repository.
+2. Open a terminal in the project directory.
+3. Install the dependencies:
 
-## Usage
+   ```bash
+   pnpm install
+   ```
 
-### Fast Start (Windows)
+4. Start the application:
 
-1.  Locate the `launcher.bat` file in the root directory.
-2.  Double-click `launcher.bat`.
-    - _First run:_ It will automatically install necessary dependencies (`npm install`). This may take a few minutes.
-    - _Subsequent runs:_ It will start the server immediately.
-3.  A console window will open, and the application will launch in your default web browser at `http://localhost:3000`.
+   ```bash
+   pnpm dev
+   ```
 
-### Manual Start (Windows & Linux)
+5. Open `http://localhost:3000`.
 
-1.  Open a terminal in the project directory.
-2.  Install dependencies:
-    ```bash
-    pnpm install
-    ```
-3.  Start the development server:
-    ```bash
-    pnpm dev
-    ```
-4.  Open `http://localhost:3000` in your browser.
+### Windows Launcher
+
+Double-click `launcher.bat` to install missing npm dependencies, start the development server, and open Klip-Klop in your browser.
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Core Engines**:
-  - **ffmpeg**: For video processing and trimming.
-  - **yt-dlp**: For downloading YouTube content.
+- [Next.js 16](https://nextjs.org/) with the App Router
+- React 19
+- Tailwind CSS v4 and shadcn/ui
+- yt-dlp and ffmpeg for downloading and video processing
 
 ## Project Structure
 
-- `/bin`: Optional portable executables (`ffmpeg`, `yt-dlp`). Checked before `PATH`.
-- `/src`: Source code for the Next.js application.
-  - `/components`: Reusable UI components.
-  - `/app`: App Router pages and layouts.
-  - `/lib`: Utility functions and server-side logic.
-- `launcher.bat`: Windows automation script for easy startup.
+- `/src`: Application source code.
+- `/download`: Generated downloads and the temporary-link registry.
+- `launcher.bat`: Windows launcher.
 
 ## License
 
-This project is licensed under the **MIT License**.
+This project is licensed under the MIT License.
 
 ## Acknowledgements
 
-- This project is a fork of [yt-trimmer](https://github.com/maykbrito/yt-trimmer) by [Mayk Brito](https://github.com/maykbrito). Big thanks to him for the original idea and codebase!
+This project is a fork of [yt-trimmer](https://github.com/maykbrito/yt-trimmer) by [Mayk Brito](https://github.com/maykbrito).

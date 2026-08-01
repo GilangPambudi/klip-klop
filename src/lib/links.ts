@@ -4,7 +4,12 @@ import path from "path";
 import { DOWNLOAD_DIR } from "./downloader";
 
 const REGISTRY_PATH = path.join(DOWNLOAD_DIR, ".links.json");
-const TTL_MS = 24 * 60 * 60 * 1000;
+const TTL_MS =
+  Number(process.env.DOWNLOAD_RETENTION_HOURS ?? 24) * 60 * 60 * 1000;
+
+if (!Number.isFinite(TTL_MS) || TTL_MS <= 0) {
+  throw new Error("DOWNLOAD_RETENTION_HOURS must be a positive number");
+}
 
 interface LinkEntry {
   file: string;
@@ -54,7 +59,7 @@ export interface ActiveLink {
   size: number;
 }
 
-/** Links whose file still exists and whose 24h window has not closed. */
+/** Links whose file still exists and whose retention window has not closed. */
 export function listLinks(): ActiveLink[] {
   const cutoff = Date.now() - TTL_MS;
   const links: ActiveLink[] = [];
@@ -79,7 +84,7 @@ export function listLinks(): ActiveLink[] {
   return links.sort((a, b) => b.createdAt - a.createdAt);
 }
 
-/** Deletes downloads and link entries older than 24 hours. */
+/** Deletes downloads and link entries after the configured retention period. */
 export function sweepExpired() {
   if (!fs.existsSync(DOWNLOAD_DIR)) return;
 

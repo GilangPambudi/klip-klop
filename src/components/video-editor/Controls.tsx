@@ -240,7 +240,7 @@ export function Controls({
               {downloadUrl && (
                 <div className="space-y-2 rounded-md border p-3">
                   <Label className="text-muted-foreground text-xs sm:text-xs">
-                    Share link (expires in 24 hours)
+                    Share link (temporary)
                   </Label>
                   <div className="flex gap-2">
                     <Button
@@ -311,7 +311,9 @@ export function Controls({
                 <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
                   <History className="mb-3 h-10 w-10 opacity-40" />
                   <p className="text-sm">No downloads yet</p>
-                  <p className="text-xs">Links stay available for 24 hours.</p>
+                  <p className="text-xs">
+                    Links use the configured retention period.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2">

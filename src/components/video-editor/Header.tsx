@@ -26,11 +26,11 @@ interface HeaderProps {
 
 export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onStopServer }: HeaderProps) {
     return (
-        <Card className="shadow-sm flex-none">
+        <Card className="shadow-sm flex-none p-1">
             <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex items-center gap-2 flex-none">
+                <div className="flex items-center gap-2 flex-none justify-center">
                     <Scissors className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                    <h3 className="font-bold text-lg sm:text-xl">Ngeklip Video</h3>
+                    <h3 className="font-bold text-lg">Klip-Klop</h3>
                 </div>
 
                 <div className="flex items-center gap-2 sm:contents">

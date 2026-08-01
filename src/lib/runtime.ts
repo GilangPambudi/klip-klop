@@ -13,10 +13,8 @@ export const YTDLP_COMMON_ARGS = [
 ];
 
 const INSTALL_HINTS: Record<string, string> = {
-  "yt-dlp":
-    "Install it with `pipx install yt-dlp` (or `sudo apt install yt-dlp`), or drop the binary into ./bin",
-  ffmpeg:
-    "Install it with `sudo apt install ffmpeg` (or `brew install ffmpeg`), or drop the binary into ./bin",
+  "yt-dlp": "Install it and make sure `yt-dlp` is available on PATH.",
+  ffmpeg: "Install it and make sure `ffmpeg` is available on PATH.",
 };
 
 export interface ResolvedBinary {
@@ -55,12 +53,7 @@ export function resolveBinary(name: "yt-dlp" | "ffmpeg"): ResolvedBinary {
   const cached = cache.get(name);
   if (cached) return cached;
 
-  const local = path.resolve(
-    process.cwd(),
-    "bin",
-    isWin ? `${name}.exe` : name,
-  );
-  const found = isExecutable(local) ? local : searchPath(name);
+  const found = searchPath(name);
 
   if (!found) {
     throw new Error(`${name} not found. ${INSTALL_HINTS[name]}`);

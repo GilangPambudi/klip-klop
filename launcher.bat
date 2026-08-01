@@ -1,6 +1,6 @@
 @echo off
-title Ngeklip Launcher
-echo Starting Ngeklip...
+title Klip-Klop Launcher
+echo Starting Klip-Klop...
 echo.
 
 :: Check if node_modules exists

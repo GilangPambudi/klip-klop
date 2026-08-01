@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Ngeklip - YouTube Trimmer",
+  title: "Klip-Klop - YouTube Trimmer",
   description: "Local YouTube Downloader and Trimmer",
   icons: {
     icon: "https://api.iconify.design/lucide:scissors.svg?color=%23e11d48",

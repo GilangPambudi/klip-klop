@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
+import { runTool } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 
 export async function POST(req: NextRequest) {
@@ -11,13 +11,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing url" }, { status: 400 });
     }
 
-    // --print keeps the response to a few short lines; -J would be megabytes.
+    // One yt-dlp call fetches info AND the preview stream URL. -g prints the
+    // resolved URL on its own line after the --print output.
+    // The default client is much faster than android_vr/tv (which each run a
+    // JS challenge solver); skip YTDLP_COMMON_ARGS here.
     const { stdout } = await runTool("yt-dlp", [
       url,
       "--no-playlist",
-      "--skip-download",
       "--no-warnings",
-      ...YTDLP_COMMON_ARGS,
+      "-g",
+      "-f",
+      "best[ext=mp4][vcodec!=none][acodec!=none]/best",
       "--print",
       "%(title)s",
       "--print",
@@ -27,7 +31,7 @@ export async function POST(req: NextRequest) {
     ]);
 
     const lines = stdout.split(/[\r\n]+/).filter(Boolean);
-    const [title, durationRaw, heightsRaw] = lines;
+    const [title, durationRaw, heightsRaw, ...streamLines] = lines;
 
     let heights: number[] = [];
     try {
@@ -39,10 +43,21 @@ export async function POST(req: NextRequest) {
       heights = [];
     }
 
+    // Only a direct mp4 plays in <video>. The `best` fallback can resolve to
+    // an HLS manifest (m3u8), which a native <video> cannot play.
+    const directUrl =
+      streamLines.find(
+        (l) =>
+          /^https?:\/\//.test(l) &&
+          /(videoplayback|googlevideo).*(itag=\d+)/.test(l) &&
+          !l.includes("manifest.googlevideo"),
+      ) ?? "";
+
     return NextResponse.json({
       title: title ?? "",
       duration: Number(durationRaw) || 0,
       heights,
+      directUrl,
     });
   } catch (error: unknown) {
     console.error("Info Error:", error);

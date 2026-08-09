@@ -112,12 +112,12 @@ export function Controls({
   return (
     <Card className="flex flex-col overflow-hidden p-4 lg:h-full">
       <Tabs defaultValue="trim" className="flex min-h-0 flex-1 flex-col">
-        <TabsList className="w-full flex-none">
+        <TabsList className="grid w-full grid-cols-2 flex-none">
           <TabsTrigger value="trim" className="text-xs sm:text-sm">
-            <Activity /> Controls
+            <Activity className="size-4" /> Controls
           </TabsTrigger>
           <TabsTrigger value="recent" className="text-xs sm:text-sm">
-            <History /> Downloads
+            <History className="size-4" /> Downloads
           </TabsTrigger>
         </TabsList>
 
@@ -125,12 +125,12 @@ export function Controls({
         <TabsContent value="trim" className="h-96 min-h-0 lg:h-auto lg:flex-1">
           <ScrollArea className="h-full">
             <div className="space-y-5 py-4">
-              <p className="text-muted-foreground text-xs">
+              <p className="text-foreground/50 text-xs">
                 Set Start/End to 00:00:00 to ignore/full download.
               </p>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs sm:text-sm">Start Time</Label>
+                <Label className="text-foreground/50 text-xs sm:text-sm">Start Time</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     onFocus={onInputFocus}
@@ -138,10 +138,10 @@ export function Controls({
                     min="0"
                     value={start.h}
                     onChange={(e) => setStart.h(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="HH"
                   />
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-foreground/50 font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -149,10 +149,10 @@ export function Controls({
                     max="59"
                     value={start.m}
                     onChange={(e) => setStart.m(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="MM"
                   />
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-foreground/50 font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -160,14 +160,14 @@ export function Controls({
                     max="59"
                     value={start.s}
                     onChange={(e) => setStart.s(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="SS"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs sm:text-sm">End Time</Label>
+                <Label className="text-foreground/50 text-xs sm:text-sm">End Time</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     onFocus={onInputFocus}
@@ -175,10 +175,10 @@ export function Controls({
                     min="0"
                     value={end.h}
                     onChange={(e) => setEnd.h(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="HH"
                   />
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-foreground/50 font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -186,10 +186,10 @@ export function Controls({
                     max="59"
                     value={end.m}
                     onChange={(e) => setEnd.m(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="MM"
                   />
-                  <span className="text-muted-foreground font-bold">:</span>
+                  <span className="text-foreground/50 font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -197,14 +197,14 @@ export function Controls({
                     max="59"
                     value={end.s}
                     onChange={(e) => setEnd.s(e.target.value)}
-                    className="text-center font-mono"
+                    className="text-center"
                     placeholder="SS"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs sm:text-sm">Filename</Label>
+                <Label className="text-foreground/50 text-xs sm:text-sm">Filename</Label>
                 <Input
                   placeholder="Auto-generated from video title"
                   value={filename}
@@ -213,7 +213,7 @@ export function Controls({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs sm:text-sm">Resolution</Label>
+                <Label className="text-foreground/50 text-xs sm:text-sm">Resolution</Label>
                 <Select
                   value={selectedHeight}
                   onValueChange={setSelectedHeight}
@@ -238,13 +238,13 @@ export function Controls({
               </div>
 
               {downloadUrl && (
-                <div className="space-y-2 rounded-md border p-3">
-                  <Label className="text-muted-foreground text-xs sm:text-xs">
+                <div className="space-y-2 rounded-base border-2 border-border p-3">
+                  <Label className="text-foreground/50 text-xs sm:text-xs">
                     Share link (temporary)
                   </Label>
                   <div className="flex gap-2">
                     <Button
-                      variant="outline"
+                      variant="neutral"
                       size="sm"
                       className="flex-1"
                       onClick={() => copyLink(downloadUrl)}
@@ -252,7 +252,7 @@ export function Controls({
                       <Copy className="mr-2 h-4 w-4" /> Copy
                     </Button>
                     <Button
-                      variant="outline"
+                      variant="neutral"
                       size="sm"
                       className="flex-1"
                       asChild
@@ -268,7 +268,7 @@ export function Controls({
               <div className="space-y-3 pt-1">
                 <div className="grid grid-cols-2 gap-3">
                   <Button
-                    variant="outline"
+                    variant="neutral"
                     onClick={onPreview}
                     disabled={!!downloadedFilename}
                   >
@@ -289,7 +289,7 @@ export function Controls({
 
                 {isLocalhost && (
                   <Button
-                    variant="secondary"
+                    variant="neutral"
                     className="w-full"
                     onClick={onOpenFolder}
                   >
@@ -308,7 +308,7 @@ export function Controls({
           <ScrollArea className="h-full">
             <div className="py-4">
               {recentLinks.length === 0 ? (
-                <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+                <div className="text-foreground/50 flex flex-col items-center justify-center py-16 text-center">
                   <History className="mb-3 h-10 w-10 opacity-40" />
                   <p className="text-sm">No downloads yet</p>
                   <p className="text-xs">
@@ -320,18 +320,18 @@ export function Controls({
                   {recentLinks.map((link) => (
                     <div
                       key={link.token}
-                      className="space-y-1.5 rounded-md border p-3"
+                      className="space-y-1.5 rounded-base border-2 border-border p-3"
                     >
                       <p className="font-mono text-sm leading-snug break-all">
                         {link.file}
                       </p>
-                      <p className="text-muted-foreground text-xs">
+                      <p className="text-foreground/50 text-xs">
                         {formatSize(link.size)} &middot; expires in{" "}
                         {formatRemaining(link.expiresAt)}
                       </p>
                       <div className="flex gap-2 pt-0.5">
                         <Button
-                          variant="outline"
+                          variant="neutral"
                           size="sm"
                           className="h-7 flex-1 text-xs"
                           onClick={() => copyLink(`/api/d/${link.token}`)}
@@ -339,7 +339,7 @@ export function Controls({
                           <Copy className="mr-1.5 h-3 w-3" /> Copy
                         </Button>
                         <Button
-                          variant="outline"
+                          variant="neutral"
                           size="sm"
                           className="h-7 flex-1 text-xs"
                           asChild

@@ -9,32 +9,13 @@ export interface ActiveLink {
   size: number;
 }
 
-interface YouTubePlayer {
-  loadVideoById: (id: string) => void;
-  playVideo: () => void;
-  pauseVideo: () => void;
-  seekTo: (seconds: number) => void;
-  getCurrentTime: () => number;
-  getVideoUrl: () => string;
-}
-
-declare global {
-  interface Window {
-    YT: {
-      Player: new (id: string, options: object) => YouTubePlayer;
-      PlayerState: {
-        PLAYING: number;
-      };
-    };
-    onYouTubeIframeAPIReady: () => void;
-  }
-}
-
 export function useVideoEditor() {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoId, setVideoId] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
-  const [playerReady, setPlayerReady] = useState(false);
+
+  // Direct stream URL (no YouTube iframe) for the preview player.
+  const [previewUrl, setPreviewUrl] = useState("");
 
   // Downloaded File path (just filename)
   const [downloadedFilename, setDownloadedFilename] = useState<string | null>(
@@ -61,7 +42,7 @@ export function useVideoEditor() {
   const [customFilename, setCustomFilename] = useState<string | null>(null);
 
   // Refs
-  const playerRef = useRef<YouTubePlayer | null>(null);
+  const playerRef = useRef<HTMLVideoElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
@@ -85,58 +66,21 @@ export function useVideoEditor() {
     void refreshLinks();
   }, []);
 
-  const onPlayerStateChange = (event: { data: number }) => {
-    setIsPlaying(event.data === window.YT.PlayerState.PLAYING);
+  // Receive the native <video> element from the <VideoPlayer> component.
+  const handlePlayer = (player: HTMLVideoElement | null) => {
+    playerRef.current = player;
+    if (!player) return;
+
+    // Track play/pause so the trim end-time auto-pause works for both
+    // streamed YouTube and local mp4 playback.
+    player.removeEventListener("playing", handlePlayerPlaying);
+    player.removeEventListener("pause", handlePlayerPaused);
+    player.addEventListener("playing", handlePlayerPlaying);
+    player.addEventListener("pause", handlePlayerPaused);
   };
 
-  // Load YouTube API
-  useEffect(() => {
-    if (!window.YT) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
-      window.onYouTubeIframeAPIReady = () => setPlayerReady(true);
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPlayerReady(true);
-    }
-    return () => clearInterval(intervalRef.current!);
-  }, []);
-
-  // Initialize Player
-  useEffect(() => {
-    const createPlayer = () => {
-      setTimeout(() => {
-        if (!document.getElementById("youtube-player")) return;
-        playerRef.current = new window.YT.Player("youtube-player", {
-          videoId: videoId,
-          events: {
-            onStateChange: onPlayerStateChange,
-            onError: () => toast.error("Error loading video"),
-          },
-          playerVars: { autoplay: 1, controls: 1 },
-        });
-      }, 100);
-    };
-
-    if (playerReady && videoId && !downloadedFilename) {
-      if (playerRef.current && playerRef.current.loadVideoById) {
-        try {
-          playerRef.current.loadVideoById(videoId);
-        } catch (e: unknown) {
-          console.error(e);
-          createPlayer();
-        }
-      } else {
-        createPlayer();
-      }
-    } else if (downloadedFilename) {
-      // If we are showing the downloaded video, the YouTube player iframe is unmounted.
-      // We must invalidate the ref so it can be re-created when we switch back.
-      playerRef.current = null;
-    }
-  }, [playerReady, videoId, downloadedFilename]);
+  const handlePlayerPlaying = () => setIsPlaying(true);
+  const handlePlayerPaused = () => setIsPlaying(false);
 
   // Auto-Load
   const handleUrlChange = (url: string) => {
@@ -151,7 +95,6 @@ export function useVideoEditor() {
         setDownloadedFilename(null);
         setDownloadUrl(null);
         setCustomFilename(null);
-        toast.success("Video loaded!");
         probeVideo(url);
 
         // On mobile the header pushes the player off-screen, so dismiss the
@@ -169,8 +112,11 @@ export function useVideoEditor() {
     }
   };
 
+  // One round-trip: validates the URL, reads video info, and resolves the
+  // preview stream URL. Runs when a (new) URL is pasted.
   const probeVideo = async (url: string) => {
     setIsProbing(true);
+    setPreviewUrl("");
     setHeights([]);
     try {
       const res = await fetch("/api/info", {
@@ -186,9 +132,12 @@ export function useVideoEditor() {
       setSelectedHeight(
         data.heights?.length ? String(data.heights[0]) : "best",
       );
+      setPreviewUrl(data.directUrl || "");
+      // Only announce success once info + preview are actually ready.
+      toast.success("Video loaded!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Probe failed";
-      toast.error(`Could not read video info: ${message}`);
+      toast.error(`Could not load video: ${message}`);
       setSelectedHeight("best");
     } finally {
       setIsProbing(false);
@@ -245,13 +194,13 @@ export function useVideoEditor() {
   useEffect(() => {
     if (isPlaying && !downloadedFilename) {
       intervalRef.current = setInterval(() => {
-        if (playerRef.current && playerRef.current.getCurrentTime) {
-          const currentTime = playerRef.current.getCurrentTime();
-          const outSeconds = getSeconds(endH, endM, endS);
-          if (outSeconds > 0 && currentTime >= outSeconds) {
-            playerRef.current.pauseVideo();
-            setIsPlaying(false);
-          }
+        const player = playerRef.current;
+        if (!player) return;
+        const currentTime = player.currentTime;
+        const outSeconds = getSeconds(endH, endM, endS);
+        if (outSeconds > 0 && currentTime >= outSeconds) {
+          player.pause();
+          setIsPlaying(false);
         }
       }, 500);
     } else {
@@ -262,20 +211,20 @@ export function useVideoEditor() {
 
   const syncCurrentTime = (isStart: boolean) => {
     if (downloadedFilename) return;
-    if (playerRef.current && playerRef.current.getCurrentTime) {
-      const curr = Math.floor(playerRef.current.getCurrentTime());
-      const h = Math.floor(curr / 3600).toString();
-      const m = Math.floor((curr % 3600) / 60).toString();
-      const s = Math.floor(curr % 60).toString();
-      if (isStart) {
-        setStartH(h);
-        setStartM(m);
-        setStartS(s);
-      } else {
-        setEndH(h);
-        setEndM(m);
-        setEndS(s);
-      }
+    const player = playerRef.current;
+    if (!player) return;
+    const curr = Math.floor(player.currentTime);
+    const h = Math.floor(curr / 3600).toString();
+    const m = Math.floor((curr % 3600) / 60).toString();
+    const s = Math.floor(curr % 60).toString();
+    if (isStart) {
+      setStartH(h);
+      setStartM(m);
+      setStartS(s);
+    } else {
+      setEndH(h);
+      setEndM(m);
+      setEndS(s);
     }
   };
 
@@ -324,10 +273,10 @@ export function useVideoEditor() {
   };
 
   const handlePreview = () => {
-    if (playerRef.current && playerRef.current.seekTo) {
-      const startSec = getSeconds(startH, startM, startS);
-      playerRef.current.seekTo(startSec);
-      playerRef.current.playVideo();
+    const player = playerRef.current;
+    if (player) {
+      player.currentTime = getSeconds(startH, startM, startS);
+      void player.play();
     }
   };
 
@@ -343,11 +292,11 @@ export function useVideoEditor() {
     setTimeout(() => {
       document.body.innerHTML = `
             <div class="fixed inset-0 bg-background flex flex-col items-center justify-center space-y-4 text-center p-4 animate-in fade-in duration-300">
-              <div class="rounded-full bg-destructive/10 p-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-destructive"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77 0"/></svg>
+              <div class="rounded-base border-2 border-border bg-secondary-background shadow-shadow p-4">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-main"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77 0"/></svg>
               </div>
               <h1 class="text-2xl font-bold">Server Stopped</h1>
-              <p class="text-muted-foreground">The server has been stopped. You can now close this tab.</p>
+              <p class="text-foreground/50">The server has been stopped. You can now close this tab.</p>
             </div>
         `;
     }, 500);
@@ -364,6 +313,7 @@ export function useVideoEditor() {
     state: {
       videoUrl,
       videoId,
+      previewUrl,
       isPlaying,
       downloadedFilename,
       isDownloading,
@@ -398,6 +348,7 @@ export function useVideoEditor() {
       handleOpenFolder,
       handleInputFocus,
       syncCurrentTime,
+      handlePlayer,
     },
     contentRef,
   };

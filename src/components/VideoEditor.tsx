@@ -23,8 +23,10 @@ export default function VideoEditor() {
                 <div ref={contentRef} className="flex flex-col scroll-mt-4 lg:col-span-2 lg:h-full">
                     <Content
                         downloadedFilename={state.downloadedFilename}
-                        videoId={state.videoId}
+                        previewUrl={state.previewUrl}
+                        isProbing={state.isProbing}
                         onClosePreview={() => setters.setDownloadedFilename(null)}
+                        onPlayer={actions.handlePlayer}
                     />
                 </div>
 

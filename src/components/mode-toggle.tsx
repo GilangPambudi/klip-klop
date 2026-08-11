@@ -1,19 +1,37 @@
 "use client"
 
 import * as React from "react"
-import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+const THEMES = [
+  { id: "mono-light", label: "Mono Light" },
+  { id: "mono-dark", label: "Mono Dark" },
+  { id: "neon-light", label: "Neon Light" },
+  { id: "neon-dark", label: "Neon Dark" },
+] as const
 
 export function ModeToggle() {
-    const { setTheme, theme } = useTheme()
+    const [mounted, setMounted] = React.useState(false)
+    const { theme, setTheme } = useTheme()
+
+    React.useEffect(() => setMounted(true), [])
+
+    if (!mounted) return null
 
     return (
-        <Button variant="neutral" size="icon" onClick={() => setTheme(theme === "light" ? "dark" : "light")}>
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-            <span className="sr-only">Toggle theme</span>
-        </Button>
+        <Select value={theme} onValueChange={setTheme}>
+            <SelectTrigger className="w-36" aria-label="Theme">
+                <SelectValue placeholder="Theme" />
+            </SelectTrigger>
+            <SelectContent>
+                {THEMES.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                        {t.label}
+                    </SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
     )
 }

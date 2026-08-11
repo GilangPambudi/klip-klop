@@ -1,9 +1,18 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Runtime-resolvable spacing tokens — kept OUT of `@theme inline` (inline
+   bakes the value in at build time) so a theme can zero the neon press
+   offset via a plain `--spacing-*` override. */
+@theme {
+  --spacing-boxShadowX: 4px;
+  --spacing-boxShadowY: 4px;
+  --spacing-reverseBoxShadowX: -4px;
+  --spacing-reverseBoxShadowY: -4px;
+}
 
 :root {
+  /* neon · light (default) */
   --background: oklch(94.27% 0.0268 242.57);
   --secondary-background: oklch(100% 0 0);
   --foreground: oklch(0% 0 0);
@@ -19,9 +28,10 @@
   --chart-4: #05E17A;
   --chart-5: #7A83FF;
   --chart-active-dot: #000;
+  --theme-font: var(--font-sans);
 }
 
-.dark {
+.neon-dark {
   --background: oklch(27.08% 0.0336 240.69);
   --secondary-background: oklch(23.93% 0 0);
   --foreground: oklch(92.49% 0 0);
@@ -29,12 +39,58 @@
   --main: oklch(61.9% 0.16907 248.5982);
   --border: oklch(0% 0 0);
   --ring: oklch(100% 0 0);
+  --overlay: oklch(0% 0 0 / 0.8);
   --shadow: 4px 4px 0px 0px var(--border);
   --chart-1: #008AE5;
   --chart-2: #FF6669;
   --chart-3: #E0B700;
   --chart-4: #04C86D;
   --chart-5: #7A83FF;
+  --chart-active-dot: #fff;
+}
+
+/* mono · flat, monochrome, opencode.ai vibe */
+.mono-light,
+.mono-dark {
+  --theme-font: var(--font-mono);
+  --shadow: none;
+  --spacing-boxShadowX: 0;
+  --spacing-boxShadowY: 0;
+  --spacing-reverseBoxShadowX: 0;
+  --spacing-reverseBoxShadowY: 0;
+}
+
+.mono-light {
+  --background: #faf9f9;
+  --secondary-background: #ffffff;
+  --foreground: #1a1c1c;
+  --main-foreground: #ffffff;
+  --main: #000000;
+  --border: #cfc4c5;
+  --ring: #000000;
+  --overlay: rgb(0 0 0 / 0.5);
+  --chart-1: #1a1c1c;
+  --chart-2: #5e5e5e;
+  --chart-3: #8a8a8a;
+  --chart-4: #b0b0b0;
+  --chart-5: #d0d0d0;
+  --chart-active-dot: #000;
+}
+
+.mono-dark {
+  --background: #171717;
+  --secondary-background: #1f1f1f;
+  --foreground: #e8e6e3;
+  --main-foreground: #000000;
+  --main: #ffffff;
+  --border: #2f2f2f;
+  --ring: #ffffff;
+  --overlay: rgb(0 0 0 / 0.6);
+  --chart-1: #f5f5f5;
+  --chart-2: #c0c0c0;
+  --chart-3: #909090;
+  --chart-4: #606060;
+  --chart-5: #303030;
   --chart-active-dot: #fff;
 }
 
@@ -53,10 +109,6 @@
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  --spacing-boxShadowX: 4px;
-  --spacing-boxShadowY: 4px;
-  --spacing-reverseBoxShadowX: -4px;
-  --spacing-reverseBoxShadowY: -4px;
   --radius-base: 5px;
   --shadow-shadow: var(--shadow);
   --font-weight-base: 500;
@@ -66,6 +118,7 @@
 @layer base {
   body {
     @apply text-foreground font-base bg-background;
+    font-family: var(--theme-font, var(--font-sans));
   }
 
   h1, h2, h3, h4, h5, h6{

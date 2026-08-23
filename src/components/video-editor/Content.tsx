@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import { useEffect, useState } from "react";
 import { Loader2, Play, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { VideoPlayer, type PlayerHandle } from "@/components/video-editor/VideoPlayer";
+import { resolveLocalVideo } from "@/lib/client";
 
 interface ContentProps {
     downloadedFilename: string | null;
@@ -17,9 +18,22 @@ interface ContentProps {
 }
 
 export function Content({ downloadedFilename, previewUrl, isProbing, onClosePreview, onPlayer }: ContentProps) {
-    const src = downloadedFilename
-        ? `/api/video?file=${downloadedFilename}`
-        : previewUrl;
+    // Resolve the <video> source:
+    //  - Web: `/api/video?file=<name>` (server streams the local mp4).
+    //  - Native: a content:// URI from the plugin (async, hence the state).
+    const [localVideoUri, setLocalVideoUri] = useState<string | null>(null);
+    useEffect(() => {
+        let cancelled = false;
+        setLocalVideoUri(null);
+        if (downloadedFilename) {
+            resolveLocalVideo(downloadedFilename)
+                .then((uri) => { if (!cancelled) setLocalVideoUri(uri); })
+                .catch(() => { /* fall back to preview if resolve fails */ });
+        }
+        return () => { cancelled = true; };
+    }, [downloadedFilename]);
+
+    const src = downloadedFilename ? (localVideoUri ?? "") : previewUrl;
 
     return (
         <Card className="aspect-video w-full overflow-hidden bg-black p-0 border-0 flex items-center justify-center relative lg:aspect-auto lg:flex-1">

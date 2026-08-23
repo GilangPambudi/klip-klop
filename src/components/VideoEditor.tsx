@@ -15,6 +15,7 @@ export default function VideoEditor() {
                 videoUrl={state.videoUrl}
                 setVideoUrl={setters.setVideoUrl}
                 isLocalhost={state.isLocalhost}
+                isNative={state.isNative}
                 onInputFocus={actions.handleInputFocus}
                 onStopServer={actions.handleStopServer}
             />
@@ -45,11 +46,16 @@ export default function VideoEditor() {
                         downloadUrl={state.downloadUrl}
                         recentLinks={state.recentLinks}
                         isLocalhost={state.isLocalhost}
+                        isNative={state.isNative}
                         isDownloading={state.isDownloading}
+                        downloadProgress={state.downloadProgress}
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
+                        advancedCookies={state.advancedCookies}
+                        setAdvancedCookies={setters.setAdvancedCookies}
                         onPreview={actions.handlePreview}
                         onDownload={actions.handleDownload}
+                        onCancelDownload={actions.handleCancelDownload}
                         onOpenFolder={actions.handleOpenFolder}
                         onInputFocus={actions.handleInputFocus}
                     />

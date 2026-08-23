@@ -20,11 +20,13 @@ interface HeaderProps {
     videoUrl: string;
     setVideoUrl: (url: string) => void;
     isLocalhost: boolean;
+    /** True when running inside the Capacitor Android app. */
+    isNative: boolean;
     onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
     onStopServer: () => void;
 }
 
-export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onStopServer }: HeaderProps) {
+export function Header({ videoUrl, setVideoUrl, isLocalhost, isNative, onInputFocus, onStopServer }: HeaderProps) {
     return (
         <Card className="flex-none p-1">
             <CardContent className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3">
@@ -47,7 +49,7 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
 
                     <div className="flex items-center gap-2 flex-none">
                         <ModeToggle />
-                        {isLocalhost && (
+                        {!isNative && isLocalhost && (
                             <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                     <Button variant="neutral" size="icon" title="Stop Server">

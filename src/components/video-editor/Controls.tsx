@@ -10,6 +10,7 @@ import {
   History,
 } from "lucide-react";
 import { toast } from "sonner";
+import * as client from "@/lib/client";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,11 +61,20 @@ interface ControlsProps {
   downloadUrl: string | null;
   recentLinks: ActiveLink[];
   isLocalhost: boolean;
+  isNative: boolean;
   isDownloading: boolean;
+  downloadProgress: {
+    phase: string;
+    percent?: number;
+    message?: string;
+  } | null;
   videoId: string;
   downloadedFilename: string | null;
+  advancedCookies: string;
+  setAdvancedCookies: (v: string) => void;
   onPreview: () => void;
   onDownload: () => void;
+  onCancelDownload: () => void;
   onOpenFolder: () => void;
   onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
 }
@@ -96,17 +106,32 @@ export function Controls({
   downloadUrl,
   recentLinks,
   isLocalhost,
+  isNative,
   isDownloading,
+  downloadProgress,
   videoId,
   downloadedFilename,
+  advancedCookies,
+  setAdvancedCookies,
   onPreview,
   onDownload,
+  onCancelDownload,
   onOpenFolder,
   onInputFocus,
 }: ControlsProps) {
   const copyLink = (url: string) => {
     navigator.clipboard.writeText(new URL(url, window.location.origin).href);
     toast.success("Link copied to clipboard");
+  };
+
+  // Native: downloads live in the Android Gallery; "Get" = open the share sheet.
+  const handleGet = (file: string) => {
+    void client.shareFile(file);
+  };
+
+  const handleCopyFile = (file: string) => {
+    navigator.clipboard.writeText(file);
+    toast.success("Filename copied");
   };
 
   return (
@@ -237,7 +262,20 @@ export function Controls({
                 </Select>
               </div>
 
-              {downloadUrl && (
+              {isNative && (
+                <div className="space-y-2">
+                  <Label className="text-foreground/50 text-xs sm:text-xs">
+                    Advanced: cookies (per session)
+                  </Label>
+                  <Input
+                    placeholder="name=value; name2=value2 (for blocked videos)"
+                    value={advancedCookies}
+                    onChange={(e) => setAdvancedCookies(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {downloadUrl && !isNative && (
                 <div className="space-y-2 rounded-base border-2 border-border p-3">
                   <Label className="text-foreground/50 text-xs sm:text-xs">
                     Share link (temporary)
@@ -265,6 +303,22 @@ export function Controls({
                 </div>
               )}
 
+              {isNative && downloadedFilename && (
+                <div className="space-y-2 rounded-base border-2 border-border p-3">
+                  <Label className="text-foreground/50 text-xs sm:text-xs">
+                    Saved to Gallery
+                  </Label>
+                  <Button
+                    variant="neutral"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => handleGet(downloadedFilename)}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" /> Share
+                  </Button>
+                </div>
+              )}
+
               <div className="space-y-3 pt-1">
                 <div className="grid grid-cols-2 gap-3">
                   <Button
@@ -287,7 +341,7 @@ export function Controls({
                   </Button>
                 </div>
 
-                {isLocalhost && (
+                {!isNative && isLocalhost && (
                   <Button
                     variant="neutral"
                     className="w-full"
@@ -295,6 +349,46 @@ export function Controls({
                   >
                     <FolderOpen className="mr-2 h-4 w-4" /> Open Folder
                   </Button>
+                )}
+
+                {isNative && isDownloading && downloadProgress && (
+                  <div className="space-y-1.5 rounded-base border-2 border-border p-3">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-foreground/70 font-medium capitalize">
+                        {downloadProgress.phase}
+                      </span>
+                      {typeof downloadProgress.percent === "number" && (
+                        <span className="text-foreground/50">
+                          {Math.round(downloadProgress.percent)}%
+                        </span>
+                      )}
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-foreground/10">
+                      <div
+                        className="h-full bg-main transition-all"
+                        style={{
+                          width: `${
+                            typeof downloadProgress.percent === "number"
+                              ? Math.min(100, Math.max(0, downloadProgress.percent))
+                              : 0
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    {downloadProgress.message && (
+                      <p className="text-foreground/50 text-xs break-all">
+                        {downloadProgress.message}
+                      </p>
+                    )}
+                    <Button
+                      variant="neutral"
+                      size="sm"
+                      className="w-full"
+                      onClick={onCancelDownload}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -330,24 +424,47 @@ export function Controls({
                         {formatRemaining(link.expiresAt)}
                       </p>
                       <div className="flex gap-2 pt-0.5">
-                        <Button
-                          variant="neutral"
-                          size="sm"
-                          className="h-7 flex-1 text-xs"
-                          onClick={() => copyLink(`/api/d/${link.token}`)}
-                        >
-                          <Copy className="mr-1.5 h-3 w-3" /> Copy
-                        </Button>
-                        <Button
-                          variant="neutral"
-                          size="sm"
-                          className="h-7 flex-1 text-xs"
-                          asChild
-                        >
-                          <a href={`/api/d/${link.token}`} download>
-                            <ExternalLink className="mr-1.5 h-3 w-3" /> Get
-                          </a>
-                        </Button>
+                        {isNative ? (
+                          <>
+                            <Button
+                              variant="neutral"
+                              size="sm"
+                              className="h-7 flex-1 text-xs"
+                              onClick={() => handleCopyFile(link.file)}
+                            >
+                              <Copy className="mr-1.5 h-3 w-3" /> Copy
+                            </Button>
+                            <Button
+                              variant="neutral"
+                              size="sm"
+                              className="h-7 flex-1 text-xs"
+                              onClick={() => handleGet(link.file)}
+                            >
+                              <ExternalLink className="mr-1.5 h-3 w-3" /> Share
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="neutral"
+                              size="sm"
+                              className="h-7 flex-1 text-xs"
+                              onClick={() => copyLink(`/api/d/${link.token}`)}
+                            >
+                              <Copy className="mr-1.5 h-3 w-3" /> Copy
+                            </Button>
+                            <Button
+                              variant="neutral"
+                              size="sm"
+                              className="h-7 flex-1 text-xs"
+                              asChild
+                            >
+                              <a href={`/api/d/${link.token}`} download>
+                                <ExternalLink className="mr-1.5 h-3 w-3" /> Get
+                              </a>
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}

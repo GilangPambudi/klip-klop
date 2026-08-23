@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+import * as client from "@/lib/client";
 
 export interface ActiveLink {
   token: string;
@@ -41,15 +42,29 @@ export function useVideoEditor() {
   const [recentLinks, setRecentLinks] = useState<ActiveLink[]>([]);
   const [customFilename, setCustomFilename] = useState<string | null>(null);
 
+  // Native-only "Advanced" session cookies (name=value; ...). Not persisted
+  // (per-session, per PRD OQ3) — cleared on app restart.
+  const [advancedCookies, setAdvancedCookies] = useState("");
+
+  // Native (APK) vs web: drive UI deltas (hide desktop-only controls, etc.)
+  const isNative = client.isNative();
+
+  // Native download progress (yt-dlp / trim / save), surfaced from the plugin.
+  const [downloadProgress, setDownloadProgress] = useState<{
+    phase: string;
+    percent?: number;
+    message?: string;
+  } | null>(null);
+
   // Refs
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
 
   const refreshLinks = () =>
-    fetch("/api/links")
-      .then((res) => res.json())
-      .then((data) => setRecentLinks(data.links || []))
+    client
+      .listDownloads()
+      .then((links) => setRecentLinks(links))
       .catch(() => {
         // Non-critical; the list just stays as-is.
       });
@@ -119,13 +134,7 @@ export function useVideoEditor() {
     setPreviewUrl("");
     setHeights([]);
     try {
-      const res = await fetch("/api/info", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to read video info");
+      const data = await client.probe(url);
 
       setTitle(data.title || "");
       setHeights(data.heights || []);
@@ -240,26 +249,27 @@ export function useVideoEditor() {
     const startStr = getformattedTime(startH, startM, startS);
     const endStr = getformattedTime(endH, endM, endS);
 
-    const promise = fetch("/api/download", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const promise = client
+      .downloadClip({
         url: videoUrl,
         start: startStr,
         end: endStr,
         filename: finalFilename,
-        height: selectedHeight === "best" ? undefined : Number(selectedHeight),
-      }),
-    }).then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      return data;
-    });
+        height:
+          selectedHeight === "best" ? undefined : Number(selectedHeight),
+        // Native only; web ignores it.
+        cookies: advancedCookies,
+      })
+      .then((data) => {
+        if (!data.success && data.error) throw new Error(data.error);
+        return data;
+      });
 
     toast.promise(promise, {
       loading: "Downloading...",
       success: (data) => {
         setIsDownloading(false);
+        setDownloadProgress(null);
         if (data.file) setDownloadedFilename(data.file);
         if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
         refreshLinks();
@@ -267,10 +277,48 @@ export function useVideoEditor() {
       },
       error: (err) => {
         setIsDownloading(false);
+        setDownloadProgress(null);
         return `Error: ${err.message}`;
       },
     });
   };
+
+  /** Cancel an in-flight download (native). */
+  const handleCancelDownload = async () => {
+    await client.cancelDownload();
+    setIsDownloading(false);
+    setDownloadProgress(null);
+    toast.info("Download cancelled");
+  };
+
+  // Native-only: subscribe to progress events from the KlipKlop plugin.
+  useEffect(() => {
+    if (!isNative) return;
+    const cap = (globalThis as Record<string, unknown>).Capacitor as {
+      Plugins: {
+        KlipKlop: {
+          addListener?: (
+            name: string,
+            cb: (e: {
+              phase: string;
+              percent?: number;
+              message?: string;
+            }) => void,
+          ) => { remove: () => void };
+        };
+      };
+    };
+    const plugin = cap.Plugins.KlipKlop;
+    if (!plugin?.addListener) return;
+    const h = plugin.addListener("progress", (e) =>
+      setDownloadProgress({
+        phase: e.phase,
+        percent: e.percent,
+        message: e.message,
+      }),
+    );
+    return () => h.remove();
+  }, [isNative]);
 
   const handlePreview = () => {
     const player = playerRef.current;
@@ -281,6 +329,8 @@ export function useVideoEditor() {
   };
 
   const handleStopServer = async () => {
+    // Native: there is no server to stop; the control is hidden anyway.
+    if (isNative) return;
     toast.info("Stopping server...");
 
     // Fire and forget shutdown request
@@ -303,6 +353,8 @@ export function useVideoEditor() {
   };
 
   const handleOpenFolder = async () => {
+    // Native: files live in the Android Gallery/MediaStore, not a folder.
+    if (isNative) return;
     await fetch("/api/open-folder", { method: "POST" });
   };
 
@@ -324,6 +376,9 @@ export function useVideoEditor() {
       downloadUrl,
       recentLinks,
       isLocalhost,
+      isNative,
+      downloadProgress,
+      advancedCookies,
       time: {
         start: { h: startH, m: startM, s: startS },
         end: { h: endH, m: endM, s: endS },
@@ -340,6 +395,7 @@ export function useVideoEditor() {
       setEndH,
       setEndM,
       setEndS,
+      setAdvancedCookies,
     },
     actions: {
       handleStopServer,
@@ -349,6 +405,7 @@ export function useVideoEditor() {
       handleInputFocus,
       syncCurrentTime,
       handlePlayer,
+      handleCancelDownload,
     },
     contentRef,
   };

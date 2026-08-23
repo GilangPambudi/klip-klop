@@ -16,7 +16,6 @@ import com.yausername.youtubedl_android.YoutubeDLResponse
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import java.io.File
-import java.io.FileOutputStream
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -189,8 +188,9 @@ class KlipKlopPlugin : Plugin() {
                 // Android). The player_client=android_vr,tv handles JS challenges.
 
                 var downloadedPath: String? = null
-                val response = YoutubeDL.getInstance().execute(request, processId) { progress, eta, line ->
-                    if (isCancelled.get()) return@execute
+                // Cancel is handled via destroyProcessById(processId) which kills
+                // the process; the callback simply stops being invoked.
+                val response = YoutubeDL.getInstance().execute(request, processId) { progress, _, line ->
                     notifyProgress("download", progress, line)
                 }
                 activeProcessId = null
@@ -340,9 +340,7 @@ class KlipKlopPlugin : Plugin() {
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val uri = resolver.insert(collection, values) ?: throw Exception("MediaStore insert failed")
         resolver.openOutputStream(uri)?.use { out ->
-            FileOutputStream(out).use { fout ->
-                src.inputStream().use { it.copyTo(fout) }
-            }
+            src.inputStream().use { it.copyTo(out) }
         }
         return uri
     }

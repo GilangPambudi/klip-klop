@@ -80,6 +80,7 @@ type KlipKlopCall = {
   updateYtDlp: () => Promise<{ updated: boolean; version?: string }>;
   cancelDownload: () => Promise<{ cancelled: boolean }>;
   resolveLocalVideo: (opts: { filename: string }) => Promise<{ uri: string }>;
+  shareFile: (opts: { filename: string }) => Promise<void>;
 };
 
 /** Capacitor plugin proxy; only defined on native. */
@@ -186,8 +187,5 @@ export async function resolveLocalVideo(
 export async function shareFile(filename: string): Promise<void> {
   const p = plugin();
   if (!p) return; // web: handled by the /api/d link instead
-  // @ts-expect-error — Capacitor Share plugin; only imported on native.
-  const { Share } = (globalThis as Record<string, unknown>).Capacitor.Plugins;
-  const uri = await p.resolveLocalVideo({ filename });
-  await Share.share({ files: [uri.uri] });
+  await p.shareFile({ filename });
 }

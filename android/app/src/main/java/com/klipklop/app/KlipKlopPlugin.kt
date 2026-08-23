@@ -13,10 +13,18 @@ import com.getcapacitor.annotation.CapacitorPlugin
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.YoutubeDLResponse
+import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.effect.Presentation
+import androidx.media3.transformer.Composition
+import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.Transformer
 import kotlinx.coroutines.*
 import org.json.JSONArray
 import java.io.File
 import java.util.UUID
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -207,8 +215,10 @@ class KlipKlopPlugin : Plugin() {
                     return@launch
                 }
 
+                notifyProgress("trim", 80.0, "Trimming…")
+                val finalFile = trimWithMedia3(File(downloadedPath), start, end)
                 notifyProgress("save", 100.0, "Saving to Gallery…")
-                val uri = saveToMediaStore(File(downloadedPath), filename)
+                val uri = saveToMediaStore(finalFile, filename)
                 val result = JSObject()
                 result.put("success", true)
                 result.put("file", filename)
@@ -307,6 +317,32 @@ class KlipKlopPlugin : Plugin() {
     }
 
     // ------------------------------------------------------------------
+    // shareFile(filename) -> { }
+    // Opens the Android share sheet with the file (via FileProvider).
+    // ------------------------------------------------------------------
+    @PluginMethod
+    fun shareFile(call: PluginCall) {
+        val filename = call.getString("filename") ?: run { call.reject("Missing filename"); return }
+        val file = File(File(context.filesDir, DOWNLOAD_DIR_NAME), filename)
+        if (!file.exists()) {
+            call.reject("File not found: $filename", "FILE_NOT_FOUND")
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file,
+        )
+        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+            type = "video/mp4"
+            putExtra(android.content.Intent.EXTRA_STREAM, uri)
+            addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        bridge.activity.startActivity(android.content.Intent.createChooser(intent, "Share Klip-Klop video"))
+        call.resolve(JSObject())
+    }
+
+    // ------------------------------------------------------------------
     // Helpers
     // ------------------------------------------------------------------
 
@@ -323,6 +359,80 @@ class KlipKlopPlugin : Plugin() {
         return dir.listFiles()?.firstOrNull {
             it.isFile && it.name.startsWith(base) && (it.name.endsWith(".mp4") || it.name.endsWith(".mkv") || it.name.endsWith(".webm"))
         }?.absolutePath
+    }
+
+    /**
+     * Frame-exact trim using Media3 Transformer.
+     *
+     * yt-dlp --download-sections already cut to the nearest keyframe; Media3
+     * re-trims the resulting file so the clip length equals (end - start),
+     * which is more precise than the keyframe cut alone.
+     *
+     * @param src       the intermediate file from yt-dlp (already a clip).
+     * @param start     "HH:mm:ss" requested start (used for duration calc).
+     * @param end       "HH:mm:ss" requested end.
+     * @return the trimmed output file (mp4), or the original if no trim needed.
+     */
+    @UnstableApi
+    private fun trimWithMedia3(src: File, start: String, end: String): File {
+        val startUs = timeToMicros(start)
+        val endUs = timeToMicros(end)
+        if (endUs <= startUs) return src // full download; nothing to trim
+
+        val clipUs = endUs - startUs
+        val outDir = File(context.cacheDir, DOWNLOAD_DIR_NAME).apply { mkdirs() }
+        val out = File(outDir, "trim_${System.nanoTime()}.mp4")
+
+        val latch = CountDownLatch(1)
+        @Volatile var error: Exception? = null
+
+        val editedItem = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(src)))
+            .setClippingConfiguration(
+                androidx.media3.transformer.ClippingConfiguration.Builder()
+                    .setStartPositionUs(0)
+                    .setEndPositionUs(clipUs)
+                    .build(),
+            )
+            .build()
+        val composition = Composition.Builder(editedItem).build()
+        val transformer = Transformer.Builder(context)
+            .addListener(object : Transformer.Listener {
+                override fun onCompleted(composition: Composition, exportResult: Transformer.ExportResult) {
+                    latch.countDown()
+                }
+
+                override fun onError(
+                    composition: Composition,
+                    exportResult: Transformer.ExportResult,
+                    exportException: Exception,
+                ) {
+                    error = exportException
+                    latch.countDown()
+                }
+            })
+            .build()
+
+        try {
+            transformer.start(composition, out.path)
+            if (!latch.await(10, TimeUnit.MINUTES)) {
+                transformer.cancel()
+                throw Exception("Trim timed out")
+            }
+            error?.let { throw it }
+        } catch (e: Exception) {
+            throw e
+        }
+
+        if (!out.exists() || out.length() == 0L) throw Exception("Trim produced no output")
+        return out
+    }
+
+    private fun timeToMicros(time: String): Long {
+        val parts = time.split(":").map { it.toLongOrNull() ?: 0L }
+        val h = parts.getOrElse(0) { 0L }
+        val m = parts.getOrElse(1) { 0L }
+        val s = parts.getOrElse(2) { 0L }
+        return ((h * 3600) + (m * 60) + s) * 1_000_000L
     }
 
     /** Copy the final file into MediaStore (Gallery). Scoped-storage safe. */

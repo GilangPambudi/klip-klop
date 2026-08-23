@@ -1,0 +1,56 @@
+name: Build APK
+
+# Builds the Klip-Klop Android APK in CI (no local Android build needed).
+# Runs on every push to `apk` and on manual dispatch.
+
+on:
+  push:
+    branches: [apk]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      # Static export of the mobile app (mobile/out). No API routes.
+      - name: Build mobile static export
+        run: npm run build:mobile
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      # Copies mobile/out into the Android project and syncs plugins.
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      # assembleRelease needs a signing config; debug is unsigned & simpler
+      # for CI artifact distribution. Use assembleRelease once signing is set up.
+      - name: Build APK (debug)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: klip-klop-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk

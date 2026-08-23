@@ -407,7 +407,7 @@ class KlipKlopPlugin : Plugin() {
                 override fun onError(
                     composition: Composition,
                     exportResult: ExportResult,
-                    exportException: Exception,
+                    exportException: androidx.media3.transformer.ExportException,
                 ) {
                     errorRef.set(exportException)
                     latch.countDown()

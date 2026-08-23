@@ -11,6 +11,14 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
+// Edge-to-edge viewport for the Capacitor WebView (also harmless on web).
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  maximumScale: 1,
+};
+
 export const metadata: Metadata = {
   title: "Klip-Klop - YouTube Trimmer",
   description: "Local YouTube Downloader and Trimmer",

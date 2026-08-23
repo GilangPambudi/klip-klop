@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Bridges the React UI (WebView) to yt-dlp (via youtubedl-android) and
  * MediaStore so downloads run fully on-device with no server.
  *
- * Mirrors the web API routes (src/app/api/*) so the frontend adapter
+ * Mirrors the web API routes (src/app/api) so the frontend adapter
  * (src/lib/client.ts) can call either target transparently.
  */
 @CapacitorPlugin(name = "KlipKlop")

@@ -2,6 +2,10 @@ name: Build APK
 
 # Builds the Klip-Klop Android APK in CI (no local Android build needed).
 # Runs on every push to `apk` and on manual dispatch.
+#
+# The release build is signed with the committed keystore (android/key.properties)
+# so every APK has the SAME signature — installing over an existing app works
+# without uninstalling first.
 
 on:
   push:
@@ -41,16 +45,15 @@ jobs:
       - name: Capacitor sync
         run: npx cap sync android
 
-      # assembleRelease needs a signing config; debug is unsigned & simpler
-      # for CI artifact distribution. Use assembleRelease once signing is set up.
-      - name: Build APK (debug)
+      # assembleRelease with the committed signing config (stable signature).
+      - name: Build APK (release, signed)
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: klip-klop-debug-apk
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: klip-klop-release-apk
+          path: android/app/build/outputs/apk/release/*.apk

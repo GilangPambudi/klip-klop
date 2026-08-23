@@ -92,6 +92,29 @@ function plugin(): KlipKlopCall | null {
   return cap.Plugins.KlipKlop ?? null;
 }
 
+/**
+ * Parse a JSON response, but fail with a clear message if the backend is
+ * missing (e.g. the native plugin is unavailable and the static WebView
+ * returns the app's index.html instead of JSON).
+ */
+async function safeJson(res: Response): Promise<Record<string, unknown>> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json") && !ct.includes("application/json;")) {
+    throw new Error(
+      "Backend unavailable: expected JSON but got " +
+        (ct || "an empty response") +
+        ". This usually means the native plugin did not load.",
+    );
+  }
+  try {
+    return (await res.json()) as Record<string, unknown>;
+  } catch {
+    throw new Error(
+      "Backend returned invalid JSON. This usually means the native plugin did not load.",
+    );
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -107,9 +130,9 @@ export async function probe(url: string): Promise<ProbeResult> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Failed to read video info");
-  return data as ProbeResult;
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error((data.error as string) || "Failed to read video info");
+  return data as unknown as ProbeResult;
 }
 
 /** Download + clip a segment, then save the result. */
@@ -131,9 +154,9 @@ export async function downloadClip(
       height: params.height,
     }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Failed");
-  return data as DownloadResult;
+  const data = await safeJson(res);
+  if (!res.ok) throw new Error((data.error as string) || "Failed");
+  return data as unknown as DownloadResult;
 }
 
 /** List recent downloads. */
@@ -146,8 +169,8 @@ export async function listDownloads(): Promise<DownloadItem[]> {
 
   // Web: GET /api/links
   const res = await fetch("/api/links");
-  const data = await res.json();
-  return (data.links || []) as DownloadItem[];
+  const data = await safeJson(res);
+  return (data.links as DownloadItem[]) || [];
 }
 
 /** Check for a yt-dlp update and apply it (native only; web is a no-op). */

@@ -1,0 +1,7 @@
+{
+  "name": "klip-klop-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static export of the Klip-Klop UI for the Android APK (no server, no API routes). Imports components from ../src.",
+  "type": "module"
+}

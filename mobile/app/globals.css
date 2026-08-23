@@ -1,0 +1,3 @@
+/* The web app's root layout imports ./globals.css from its own directory,
+   so this file is pulled in transitively via the re-exported layout.
+   Nothing else needed here. */

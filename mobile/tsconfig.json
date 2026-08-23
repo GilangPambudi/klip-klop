@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // Re-point the @/* alias at the web app's source tree so the mobile
+    // build shares the exact same components without duplicating them.
+    "paths": {
+      "@/*": ["../src/*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "next.config.ts"
+  ],
+  "exclude": ["node_modules", "out"]
+}

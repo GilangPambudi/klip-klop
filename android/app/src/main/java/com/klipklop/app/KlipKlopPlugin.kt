@@ -18,6 +18,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.effect.Presentation
 import androidx.media3.transformer.Composition
 import androidx.media3.transformer.EditedMediaItem
+import androidx.media3.transformer.ExportResult
 import androidx.media3.transformer.Transformer
 import kotlinx.coroutines.*
 import org.json.JSONArray
@@ -384,41 +385,43 @@ class KlipKlopPlugin : Plugin() {
         val out = File(outDir, "trim_${System.nanoTime()}.mp4")
 
         val latch = CountDownLatch(1)
-        @Volatile var error: Exception? = null
+        val errorRef = java.util.concurrent.atomic.AtomicReference<Exception?>(null)
 
-        val editedItem = EditedMediaItem.Builder(MediaItem.fromUri(Uri.fromFile(src)))
-            .setClippingConfiguration(
-                androidx.media3.transformer.ClippingConfiguration.Builder()
-                    .setStartPositionUs(0)
-                    .setEndPositionUs(clipUs)
-                    .build(),
-            )
+        // Media3 1.8.1: clipping lives on MediaItem (MediaItem.ClippingConfiguration),
+        // not on EditedMediaItem. Wire it through MediaItem.Builder.
+        val clipping = MediaItem.ClippingConfiguration.Builder()
+            .setStartPositionUs(0)
+            .setEndPositionUs(clipUs)
             .build()
-        val composition = Composition.Builder(editedItem).build()
+        val mediaItem = MediaItem.Builder()
+            .setUri(Uri.fromFile(src))
+            .setClippingConfiguration(clipping)
+            .build()
+        val editedItem = EditedMediaItem.Builder(mediaItem).build()
         val transformer = Transformer.Builder(context)
             .addListener(object : Transformer.Listener {
-                override fun onCompleted(composition: Composition, exportResult: Transformer.ExportResult) {
+                override fun onCompleted(composition: Composition, exportResult: ExportResult) {
                     latch.countDown()
                 }
 
                 override fun onError(
                     composition: Composition,
-                    exportResult: Transformer.ExportResult,
+                    exportResult: ExportResult,
                     exportException: Exception,
                 ) {
-                    error = exportException
+                    errorRef.set(exportException)
                     latch.countDown()
                 }
             })
             .build()
 
         try {
-            transformer.start(composition, out.path)
+            transformer.start(editedItem, out.path)
             if (!latch.await(10, TimeUnit.MINUTES)) {
                 transformer.cancel()
                 throw Exception("Trim timed out")
             }
-            error?.let { throw it }
+            errorRef.get()?.let { throw it }
         } catch (e: Exception) {
             throw e
         }

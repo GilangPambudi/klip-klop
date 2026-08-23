@@ -153,10 +153,11 @@ class KlipKlopPlugin : Plugin() {
         scope.launch {
             try {
                 ensureInit()
-                notifyProgress("download", 0, "Preparing…")
+                notifyProgress("download", 0.0, "Preparing…")
 
                 // Resolve start/end for --download-sections (web uses HH:mm:ss already).
-                val (startZero, endZero) = start == "00:00:00" || start == "0" to (end == "00:00:00" || end == "0")
+                val startZero = start == "00:00:00" || start == "0"
+                val endZero = end == "00:00:00" || end == "0"
                 val sections = when {
                     startZero && endZero -> null
                     !startZero && endZero -> "*${start}-inf"
@@ -191,7 +192,7 @@ class KlipKlopPlugin : Plugin() {
                 // Cancel is handled via destroyProcessById(processId) which kills
                 // the process; the callback simply stops being invoked.
                 val response = YoutubeDL.getInstance().execute(request, processId) { progress, _, line ->
-                    notifyProgress("download", progress, line)
+                    notifyProgress("download", progress.toDouble(), line)
                 }
                 activeProcessId = null
 
@@ -206,7 +207,7 @@ class KlipKlopPlugin : Plugin() {
                     return@launch
                 }
 
-                notifyProgress("save", 100, "Saving to Gallery…")
+                notifyProgress("save", 100.0, "Saving to Gallery…")
                 val uri = saveToMediaStore(File(downloadedPath), filename)
                 val result = JSObject()
                 result.put("success", true)

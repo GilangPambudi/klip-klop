@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Explicitly scan the shared source tree for class candidates. Needed by the
+   mobile static build (next build mobile) where Tailwind's base dir is the
+   mobile/ sub-app and would otherwise miss ../src/components/**. Harmless for
+   the web build (already scans src/). */
+@source "../../src";
+
 /* Runtime-resolvable spacing tokens — kept OUT of `@theme inline` (inline
    bakes the value in at build time) so a theme can zero the neon press
    offset via a plain `--spacing-*` override. */

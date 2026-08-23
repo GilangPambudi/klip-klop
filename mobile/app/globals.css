@@ -1,3 +1,9 @@
-/* The web app's root layout imports ./globals.css from its own directory,
-   so this file is pulled in transitively via the re-exported layout.
-   Nothing else needed here. */
+/* Tailwind v4 scans source files from the CSS entry point's directory.
+   The mobile app's own app/ dir is just re-export stubs — the real UI
+   classes live under ../src (components, app/*.css). Tell Tailwind to scan
+   there, otherwise it emits no utility classes and the WebView renders
+   unstyled. */
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@source "../../src";

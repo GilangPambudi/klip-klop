@@ -49,6 +49,7 @@ export default function VideoEditor() {
                         isNative={state.isNative}
                         isDownloading={state.isDownloading}
                         downloadProgress={state.downloadProgress}
+                        ytDlpVersion={state.ytDlpVersion}
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
                         advancedCookies={state.advancedCookies}

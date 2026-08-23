@@ -68,6 +68,7 @@ interface ControlsProps {
     percent?: number;
     message?: string;
   } | null;
+  ytDlpVersion: string | null;
   videoId: string;
   downloadedFilename: string | null;
   advancedCookies: string;
@@ -109,6 +110,7 @@ export function Controls({
   isNative,
   isDownloading,
   downloadProgress,
+  ytDlpVersion,
   videoId,
   downloadedFilename,
   advancedCookies,
@@ -273,6 +275,12 @@ export function Controls({
                     onChange={(e) => setAdvancedCookies(e.target.value)}
                   />
                 </div>
+              )}
+
+              {isNative && ytDlpVersion && (
+                <p className="text-foreground/40 text-[10px]">
+                  yt-dlp {ytDlpVersion}
+                </p>
               )}
 
               {downloadUrl && !isNative && (

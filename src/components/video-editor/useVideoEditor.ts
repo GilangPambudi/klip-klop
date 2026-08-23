@@ -56,6 +56,9 @@ export function useVideoEditor() {
     message?: string;
   } | null>(null);
 
+  // yt-dlp version after an auto-check on app open (native).
+  const [ytDlpVersion, setYtDlpVersion] = useState<string | null>(null);
+
   // Refs
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,6 +83,18 @@ export function useVideoEditor() {
   useEffect(() => {
     void refreshLinks();
   }, []);
+
+  // Native only: auto-check + update yt-dlp when the app opens (PRD OQ /
+  // FR-6). Web is a no-op (no bundled yt-dlp). Non-blocking.
+  useEffect(() => {
+    if (!isNative) return;
+    client
+      .updateYtDlp()
+      .then((r) => setYtDlpVersion(r.version ?? null))
+      .catch(() => {
+        // Non-critical; downloads still work with the bundled version.
+      });
+  }, [isNative]);
 
   // Receive the native <video> element from the <VideoPlayer> component.
   const handlePlayer = (player: HTMLVideoElement | null) => {
@@ -379,6 +394,7 @@ export function useVideoEditor() {
       isNative,
       downloadProgress,
       advancedCookies,
+      ytDlpVersion,
       time: {
         start: { h: startH, m: startM, s: startS },
         end: { h: endH, m: endM, s: endS },

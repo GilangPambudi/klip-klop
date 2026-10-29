@@ -8,8 +8,6 @@ const execFileAsync = promisify(execFile);
 export const YTDLP_COMMON_ARGS = [
   "--js-runtimes",
   "node",
-  "--extractor-args",
-  "youtube:player_client=android_vr,tv",
 ];
 
 const INSTALL_HINTS: Record<string, string> = {

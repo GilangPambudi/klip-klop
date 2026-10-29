@@ -14,9 +14,6 @@ const mono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "Klip-Klop - YouTube Trimmer",
   description: "Local YouTube Downloader and Trimmer",
-  icons: {
-    icon: "https://api.iconify.design/lucide:scissors.svg?color=%23e11d48",
-  },
 };
 
 export default function RootLayout({

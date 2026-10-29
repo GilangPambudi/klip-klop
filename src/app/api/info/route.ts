@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runTool } from "@/lib/runtime";
+import { runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 
 export async function POST(req: NextRequest) {
@@ -13,9 +13,8 @@ export async function POST(req: NextRequest) {
 
     // One yt-dlp call fetches info AND the preview stream URL. -g prints the
     // resolved URL on its own line after the --print output.
-    // The default client is much faster than android_vr/tv (which each run a
-    // JS challenge solver); skip YTDLP_COMMON_ARGS here.
     const { stdout } = await runTool("yt-dlp", [
+      ...YTDLP_COMMON_ARGS,
       url,
       "--no-playlist",
       "--no-warnings",

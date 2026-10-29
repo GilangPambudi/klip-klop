@@ -49,6 +49,7 @@ export default function VideoEditor() {
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
                         onPreview={actions.handlePreview}
+                        onPreviewFile={actions.handlePreviewFile}
                         onDownload={actions.handleDownload}
                         onOpenFolder={actions.handleOpenFolder}
                         onInputFocus={actions.handleInputFocus}

@@ -280,6 +280,14 @@ export function useVideoEditor() {
     }
   };
 
+  // Plays a past download in the main player, scrolled into view on mobile.
+  const handlePreviewFile = (file: string) => {
+    setDownloadedFilename(file);
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      contentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const handleStopServer = async () => {
     toast.info("Stopping server...");
 
@@ -345,6 +353,7 @@ export function useVideoEditor() {
       handleStopServer,
       handleDownload,
       handlePreview,
+      handlePreviewFile,
       handleOpenFolder,
       handleInputFocus,
       syncCurrentTime,

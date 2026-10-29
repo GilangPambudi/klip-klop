@@ -64,6 +64,7 @@ interface ControlsProps {
   videoId: string;
   downloadedFilename: string | null;
   onPreview: () => void;
+  onPreviewFile: (file: string) => void;
   onDownload: () => void;
   onOpenFolder: () => void;
   onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
@@ -100,6 +101,7 @@ export function Controls({
   videoId,
   downloadedFilename,
   onPreview,
+  onPreviewFile,
   onDownload,
   onOpenFolder,
   onInputFocus,
@@ -330,6 +332,14 @@ export function Controls({
                         {formatRemaining(link.expiresAt)}
                       </p>
                       <div className="flex gap-2 pt-0.5">
+                        <Button
+                          variant="neutral"
+                          size="sm"
+                          className="h-7 flex-1 text-xs"
+                          onClick={() => onPreviewFile(link.file)}
+                        >
+                          <Play className="mr-1.5 h-3 w-3" /> Preview
+                        </Button>
                         <Button
                           variant="neutral"
                           size="sm"

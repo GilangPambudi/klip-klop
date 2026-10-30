@@ -304,7 +304,7 @@ export function useVideoEditor() {
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-main"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77 0"/></svg>
               </div>
               <h1 class="text-2xl font-bold">Server Stopped</h1>
-              <p class="text-foreground/50">The server has been stopped. You can now close this tab.</p>
+              <p class="text-muted-foreground">The server has been stopped. You can now close this tab.</p>
             </div>
         `;
     }, 500);

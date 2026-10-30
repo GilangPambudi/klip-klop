@@ -19,7 +19,8 @@ export default function VideoEditor() {
                 onStopServer={actions.handleStopServer}
             />
 
-            <div className="grid grid-cols-1 gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-3">
+            {/* grid-rows-1 = minmax(0,1fr): an `auto` row would grow with the controls and overflow 90vh. */}
+            <div className="grid grid-cols-1 gap-5 lg:min-h-0 lg:flex-1 lg:grid-cols-3 lg:grid-rows-1">
                 <div ref={contentRef} className="flex flex-col scroll-mt-4 lg:col-span-2 lg:h-full">
                     <Content
                         downloadedFilename={state.downloadedFilename}

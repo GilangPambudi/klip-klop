@@ -21,13 +21,8 @@
   --border: oklch(0% 0 0);
   --ring: oklch(0% 0 0);
   --overlay: oklch(0% 0 0 / 0.8);
+  --muted-foreground: oklch(45% 0 0);
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #0099FF;
-  --chart-2: #FF4D50;
-  --chart-3: #FACC00;
-  --chart-4: #05E17A;
-  --chart-5: #7A83FF;
-  --chart-active-dot: #000;
   --theme-font: var(--font-sans);
 }
 
@@ -40,13 +35,8 @@
   --border: oklch(0% 0 0);
   --ring: oklch(100% 0 0);
   --overlay: oklch(0% 0 0 / 0.8);
+  --muted-foreground: oklch(72% 0 0);
   --shadow: 4px 4px 0px 0px var(--border);
-  --chart-1: #008AE5;
-  --chart-2: #FF6669;
-  --chart-3: #E0B700;
-  --chart-4: #04C86D;
-  --chart-5: #7A83FF;
-  --chart-active-dot: #fff;
 }
 
 /* mono · flat, monochrome, opencode.ai vibe */
@@ -69,12 +59,7 @@
   --border: #cfc4c5;
   --ring: #000000;
   --overlay: rgb(0 0 0 / 0.5);
-  --chart-1: #1a1c1c;
-  --chart-2: #5e5e5e;
-  --chart-3: #8a8a8a;
-  --chart-4: #b0b0b0;
-  --chart-5: #d0d0d0;
-  --chart-active-dot: #000;
+  --muted-foreground: #6b6766;
 }
 
 .mono-dark {
@@ -86,12 +71,7 @@
   --border: #2f2f2f;
   --ring: #ffffff;
   --overlay: rgb(0 0 0 / 0.6);
-  --chart-1: #f5f5f5;
-  --chart-2: #c0c0c0;
-  --chart-3: #909090;
-  --chart-4: #606060;
-  --chart-5: #303030;
-  --chart-active-dot: #fff;
+  --muted-foreground: #9b9893;
 }
 
 @theme inline {
@@ -103,11 +83,7 @@
   --color-border: var(--border);
   --color-overlay: var(--overlay);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  --color-muted-foreground: var(--muted-foreground);
 
   --radius-base: 5px;
   --shadow-shadow: var(--shadow);

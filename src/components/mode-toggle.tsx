@@ -2,8 +2,9 @@
 
 import * as React from "react"
 import { useTheme } from "next-themes"
+import { Palette } from "lucide-react"
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select"
 
 const THEMES = [
   { id: "mono-light", label: "Mono Light" },
@@ -22,8 +23,13 @@ export function ModeToggle() {
 
     return (
         <Select value={theme} onValueChange={setTheme}>
-            <SelectTrigger className="w-36" aria-label="Theme">
-                <SelectValue placeholder="Theme" />
+            {/* Icon-only trigger: hide the select's own chevron. */}
+            <SelectTrigger
+                className="size-11 justify-center px-0 lg:size-10 [&>svg:last-child]:hidden"
+                aria-label="Theme"
+                title="Theme"
+            >
+                <Palette className="size-5" aria-hidden="true" />
             </SelectTrigger>
             <SelectContent>
                 {THEMES.map((t) => (

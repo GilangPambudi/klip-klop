@@ -123,17 +123,17 @@ export function Controls({
           </TabsTrigger>
         </TabsList>
 
-        {/* Both panels take the same height so switching tabs never resizes the card. */}
-        <TabsContent value="trim" className="h-96 min-h-0 lg:h-auto lg:flex-1">
+        {/* Desktop: both panels fill the card and scroll inside it. Mobile: the page scrolls. */}
+        <TabsContent value="trim" className="min-h-0 lg:flex-1">
           <ScrollArea className="h-full">
             <div className="space-y-5 py-4">
-              <p className="text-foreground/50 text-xs">
+              <p className="text-muted-foreground text-xs">
                 Set Start/End to 00:00:00 to ignore/full download.
               </p>
 
-              <div className="space-y-2">
-                <Label className="text-foreground/50 text-xs sm:text-sm">Start Time</Label>
-                <div className="flex items-center gap-2">
+              <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 lg:block lg:space-y-2">
+                <Label className="text-muted-foreground text-xs sm:text-sm">Start Time</Label>
+                <div className="flex min-w-0 items-center gap-2">
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -143,7 +143,7 @@ export function Controls({
                     className="text-center"
                     placeholder="HH"
                   />
-                  <span className="text-foreground/50 font-bold">:</span>
+                  <span className="text-muted-foreground font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -154,7 +154,7 @@ export function Controls({
                     className="text-center"
                     placeholder="MM"
                   />
-                  <span className="text-foreground/50 font-bold">:</span>
+                  <span className="text-muted-foreground font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -168,9 +168,9 @@ export function Controls({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-foreground/50 text-xs sm:text-sm">End Time</Label>
-                <div className="flex items-center gap-2">
+              <div className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-2 lg:block lg:space-y-2">
+                <Label className="text-muted-foreground text-xs sm:text-sm">End Time</Label>
+                <div className="flex min-w-0 items-center gap-2">
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -180,7 +180,7 @@ export function Controls({
                     className="text-center"
                     placeholder="HH"
                   />
-                  <span className="text-foreground/50 font-bold">:</span>
+                  <span className="text-muted-foreground font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -191,7 +191,7 @@ export function Controls({
                     className="text-center"
                     placeholder="MM"
                   />
-                  <span className="text-foreground/50 font-bold">:</span>
+                  <span className="text-muted-foreground font-bold">:</span>
                   <Input
                     onFocus={onInputFocus}
                     type="number"
@@ -206,7 +206,7 @@ export function Controls({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-foreground/50 text-xs sm:text-sm">Filename</Label>
+                <Label className="text-muted-foreground text-xs sm:text-sm">Filename</Label>
                 <Input
                   placeholder="Auto-generated from video title"
                   value={filename}
@@ -215,7 +215,7 @@ export function Controls({
               </div>
 
               <div className="space-y-2">
-                <Label className="text-foreground/50 text-xs sm:text-sm">Resolution</Label>
+                <Label className="text-muted-foreground text-xs sm:text-sm">Resolution</Label>
                 <Select
                   value={selectedHeight}
                   onValueChange={setSelectedHeight}
@@ -241,14 +241,14 @@ export function Controls({
 
               {downloadUrl && (
                 <div className="space-y-2 rounded-base border-2 border-border p-3">
-                  <Label className="text-foreground/50 text-xs sm:text-xs">
+                  <Label className="text-muted-foreground text-xs sm:text-xs">
                     Share link (temporary)
                   </Label>
                   <div className="flex gap-2">
                     <Button
                       variant="neutral"
                       size="sm"
-                      className="flex-1"
+                      className="h-11 flex-1 lg:h-9"
                       onClick={() => copyLink(downloadUrl)}
                     >
                       <Copy className="mr-2 h-4 w-4" /> Copy
@@ -256,7 +256,7 @@ export function Controls({
                     <Button
                       variant="neutral"
                       size="sm"
-                      className="flex-1"
+                      className="h-11 flex-1 lg:h-9"
                       asChild
                     >
                       <a href={downloadUrl} download>
@@ -267,35 +267,43 @@ export function Controls({
                 </div>
               )}
 
-              <div className="space-y-3 pt-1">
-                <div className="grid grid-cols-2 gap-3">
+              {/* Mobile: a bar fixed to the bottom of the viewport. Desktop: inline at the end of the panel. */}
+              <div className="fixed inset-x-0 bottom-0 z-40 flex gap-2 border-t-2 border-border bg-secondary-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:static lg:z-auto lg:grid lg:grid-cols-2 lg:gap-3 lg:border-0 lg:bg-transparent lg:p-0 lg:pt-1">
+                {isLocalhost && (
                   <Button
                     variant="neutral"
-                    onClick={onPreview}
-                    disabled={!!downloadedFilename}
+                    size="icon"
+                    className="size-12 flex-none lg:hidden"
+                    aria-label="Open folder"
+                    onClick={onOpenFolder}
                   >
-                    <Play className="mr-2 h-4 w-4" /> Preview
+                    <FolderOpen />
                   </Button>
-                  <Button
-                    onClick={onDownload}
-                    disabled={isDownloading || !videoId}
-                  >
-                    {isDownloading ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Download className="mr-2 h-4 w-4" />
-                    )}
-                    Download
-                  </Button>
-                </div>
+                )}
+                <Button
+                  variant="neutral"
+                  className="h-12 flex-none lg:h-10"
+                  onClick={onPreview}
+                  disabled={!!downloadedFilename}
+                >
+                  <Play /> Preview
+                </Button>
+                <Button
+                  className="h-12 flex-1 lg:h-10"
+                  onClick={onDownload}
+                  disabled={isDownloading || !videoId}
+                >
+                  {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+                  Download
+                </Button>
 
                 {isLocalhost && (
                   <Button
                     variant="neutral"
-                    className="w-full"
+                    className="col-span-2 hidden w-full lg:inline-flex"
                     onClick={onOpenFolder}
                   >
-                    <FolderOpen className="mr-2 h-4 w-4" /> Open Folder
+                    <FolderOpen /> Open Folder
                   </Button>
                 )}
               </div>
@@ -305,12 +313,12 @@ export function Controls({
 
         <TabsContent
           value="recent"
-          className="h-96 min-h-0 lg:h-auto lg:flex-1"
+          className="min-h-0 lg:flex-1"
         >
           <ScrollArea className="h-full">
             <div className="py-4">
               {recentLinks.length === 0 ? (
-                <div className="text-foreground/50 flex flex-col items-center justify-center py-16 text-center">
+                <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
                   <History className="mb-3 h-10 w-10 opacity-40" />
                   <p className="text-sm">No downloads yet</p>
                   <p className="text-xs">
@@ -327,7 +335,7 @@ export function Controls({
                       <p className="font-mono text-sm leading-snug break-all">
                         {link.file}
                       </p>
-                      <p className="text-foreground/50 text-xs">
+                      <p className="text-muted-foreground text-xs">
                         {formatSize(link.size)} &middot; expires in{" "}
                         {formatRemaining(link.expiresAt)}
                       </p>
@@ -335,27 +343,29 @@ export function Controls({
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="h-7 flex-1 text-xs"
+                          className="size-11 flex-none px-0 lg:size-7"
+                          aria-label="Preview"
+                          title="Preview"
                           onClick={() => onPreviewFile(link.file)}
                         >
-                          <Play className="mr-1.5 h-3 w-3" /> Preview
+                          <Play className="h-3 w-3" />
                         </Button>
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="h-7 flex-1 text-xs"
+                          className="h-11 flex-1 text-xs lg:h-7"
                           onClick={() => copyLink(`/api/d/${link.token}`)}
                         >
-                          <Copy className="mr-1.5 h-3 w-3" /> Copy
+                          <Copy className="h-3 w-3" /> Copy<span className="lg:hidden"> link</span>
                         </Button>
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="h-7 flex-1 text-xs"
+                          className="h-11 flex-1 text-xs lg:h-7"
                           asChild
                         >
                           <a href={`/api/d/${link.token}`} download>
-                            <ExternalLink className="mr-1.5 h-3 w-3" /> Get
+                            <Download className="h-3 w-3" /> <span className="lg:hidden">Download</span><span className="hidden lg:inline">Get</span>
                           </a>
                         </Button>
                       </div>

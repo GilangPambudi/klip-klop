@@ -28,7 +28,7 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
     return (
         <Card className="flex-none p-1">
             {/* Mobile: logo + buttons on row 1, URL wraps to row 2. Desktop: one row. */}
-            <CardContent className="p-4 lg:p-5 flex flex-wrap items-center gap-3 lg:flex-nowrap">
+            <CardContent className="p-3 lg:p-5 flex flex-wrap items-center gap-3 lg:flex-nowrap">
                 <div className="flex items-center gap-2 flex-1 lg:flex-none">
                     {/* Trim Brackets logo; tile and glyph swap with the theme. */}
                     <svg viewBox="0 0 110 110" aria-hidden="true" className="h-6 w-6 sm:h-7 sm:w-7">
@@ -36,7 +36,7 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
                         <path d="M37 34 H28 V76 H37 M73 34 H82 V76 H73" fill="none" strokeWidth="8" className="stroke-background" />
                         <path d="M48 42 L66 55 L48 68 Z" strokeWidth="3" strokeLinejoin="round" className="fill-background stroke-background" />
                     </svg>
-                    <h3 className="font-bold text-lg">Klip-Klop</h3>
+                    <h3 className="font-bold text-base lg:text-lg">Klip-Klop</h3>
                 </div>
 
                 <div className="relative order-last w-full min-w-0 lg:order-none lg:w-auto lg:flex-1">
@@ -55,7 +55,7 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
                     {isLocalhost && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <Button variant="neutral" size="icon" className="size-11 lg:size-10" title="Stop Server" aria-label="Stop server">
+                                <Button variant="neutral" size="icon" title="Stop Server" aria-label="Stop server">
                                     <Power className="h-5 w-5" />
                                 </Button>
                             </AlertDialogTrigger>

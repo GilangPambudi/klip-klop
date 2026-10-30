@@ -45,7 +45,7 @@ Design: "A · Stack + sticky bar" in the [mobile canvas](https://claude.ai/artif
 
 Top to bottom, in one page scroll:
 
-1. **Header**: logo, name, then two 44px icon buttons, theme and stop server. The theme picker is icon-only at every width; it opens the theme list.
+1. **Header**: logo, name, then two 40px icon buttons, theme and stop server. The theme picker is icon-only at every width; it opens the theme list.
 2. **URL input**, full width, its own row.
 3. **Player**, 16:9, full width.
 4. **Tabs**: Controls | Downloads (with count).
@@ -55,7 +55,10 @@ Top to bottom, in one page scroll:
 Rules:
 
 - **No nested scroll on mobile.** Drop the `h-96` + `ScrollArea` below `lg`. The page scrolls; tab panels grow to their content.
-- **Touch targets ≥ 44px.** Inputs and buttons are `h-11` on mobile (desktop keeps `h-10`). Inputs use 16px text on mobile so iOS doesn't zoom on focus.
+- **Same control size as desktop.** Inputs and buttons stay `h-10` with `text-sm`; 44px and 16px felt oversized in the mono font. Download-list buttons are `h-9`. Known trade-off: iOS Safari zooms in when focusing a sub-16px input.
+- **Tight spacing.** Page padding `px-3 pt-3`, cards `p-3`, gaps `gap-3`; desktop keeps its larger values. Bottom padding `pb-20` leaves room for the sticky bar.
+- **Tab switch** (`ui/tabs.tsx` + `[data-tab-content]` in `globals.css`): the old panel fades out over 150ms on top of the new one, and the new panel's sections fade in over 400ms, staggered by 100ms (same timing as tms-geu). Off under `prefers-reduced-motion`.
+- **Scroll areas never grow sideways.** The `ScrollArea` viewport forces Radix's inner `display: table` wrapper to `block`, so long filenames wrap instead of widening the card.
 - **Icon-only buttons need `aria-label`**: Open folder (mobile bar), theme, stop server, and Preview in the Downloads list.
 - **Downloads tab items**: filename, then size and expiry in `muted-foreground`, then one row of buttons: Preview (icon only, at every width), Copy link (icon + label), Download (icon + label).
 

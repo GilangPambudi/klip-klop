@@ -25,7 +25,7 @@ export function ModeToggle() {
         <Select value={theme} onValueChange={setTheme}>
             {/* Icon-only trigger: hide the select's own chevron. */}
             <SelectTrigger
-                className="size-11 justify-center px-0 lg:size-10 [&>svg:last-child]:hidden"
+                className="size-10 justify-center px-0 [&>svg:last-child]:hidden"
                 aria-label="Theme"
                 title="Theme"
             >

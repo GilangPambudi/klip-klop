@@ -36,8 +36,8 @@ export function Content({ downloadedFilename, previewUrl, isProbing, onClosePrev
             ) : (
                 <div className="aspect-video w-full h-full max-h-full">
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground pointer-events-none">
-                        <Play className="w-16 h-16 mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Load video to start</p>
+                        <Play className="w-10 h-10 mb-2 opacity-50 lg:w-16 lg:h-16 lg:mb-4" />
+                        <p className="text-sm font-medium lg:text-lg">Load video to start</p>
                     </div>
                 </div>
             )}

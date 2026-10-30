@@ -13,7 +13,7 @@ function Tabs({
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
-      className={cn("w-full", className)}
+      className={cn("relative w-full", className)}
       {...props}
     />
   )
@@ -60,6 +60,8 @@ function TabsContent({
       data-slot="tabs-content"
       className={cn(
         "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        // The leaving panel fades out on top of the new one (top-14 = h-12 list + mt-2) instead of pushing it down.
+        "data-[state=inactive]:pointer-events-none data-[state=inactive]:absolute data-[state=inactive]:inset-x-0 data-[state=inactive]:top-14 data-[state=inactive]:animate-out data-[state=inactive]:fade-out-0 data-[state=inactive]:duration-150",
         className,
       )}
       {...props}

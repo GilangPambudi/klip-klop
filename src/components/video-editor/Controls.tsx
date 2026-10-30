@@ -112,7 +112,7 @@ export function Controls({
   };
 
   return (
-    <Card className="flex flex-col overflow-hidden p-4 lg:h-full">
+    <Card className="flex flex-col overflow-hidden p-3 lg:h-full lg:p-4">
       <Tabs defaultValue="trim" className="flex min-h-0 flex-1 flex-col">
         <TabsList className="grid w-full grid-cols-2 flex-none">
           <TabsTrigger value="trim" className="text-xs sm:text-sm">
@@ -126,7 +126,7 @@ export function Controls({
         {/* Desktop: both panels fill the card and scroll inside it. Mobile: the page scrolls. */}
         <TabsContent value="trim" className="min-h-0 lg:flex-1">
           <ScrollArea className="h-full">
-            <div className="space-y-5 py-4">
+            <div data-tab-content className="space-y-4 py-3 lg:space-y-5 lg:py-4">
               <p className="text-muted-foreground text-xs">
                 Set Start/End to 00:00:00 to ignore/full download.
               </p>
@@ -248,7 +248,7 @@ export function Controls({
                     <Button
                       variant="neutral"
                       size="sm"
-                      className="h-11 flex-1 lg:h-9"
+                      className="flex-1"
                       onClick={() => copyLink(downloadUrl)}
                     >
                       <Copy className="mr-2 h-4 w-4" /> Copy
@@ -256,7 +256,7 @@ export function Controls({
                     <Button
                       variant="neutral"
                       size="sm"
-                      className="h-11 flex-1 lg:h-9"
+                      className="flex-1"
                       asChild
                     >
                       <a href={downloadUrl} download>
@@ -273,7 +273,7 @@ export function Controls({
                   <Button
                     variant="neutral"
                     size="icon"
-                    className="size-12 flex-none lg:hidden"
+                    className="flex-none lg:hidden"
                     aria-label="Open folder"
                     onClick={onOpenFolder}
                   >
@@ -282,14 +282,14 @@ export function Controls({
                 )}
                 <Button
                   variant="neutral"
-                  className="h-12 flex-none lg:h-10"
+                  className="flex-none"
                   onClick={onPreview}
                   disabled={!!downloadedFilename}
                 >
                   <Play /> Preview
                 </Button>
                 <Button
-                  className="h-12 flex-1 lg:h-10"
+                  className="flex-1"
                   onClick={onDownload}
                   disabled={isDownloading || !videoId}
                 >
@@ -316,9 +316,9 @@ export function Controls({
           className="min-h-0 lg:flex-1"
         >
           <ScrollArea className="h-full">
-            <div className="py-4">
+            <div className="py-3 lg:py-4">
               {recentLinks.length === 0 ? (
-                <div className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
+                <div data-tab-content className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
                   <History className="mb-3 h-10 w-10 opacity-40" />
                   <p className="text-sm">No downloads yet</p>
                   <p className="text-xs">
@@ -326,7 +326,7 @@ export function Controls({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div data-tab-content className="space-y-2">
                   {recentLinks.map((link) => (
                     <div
                       key={link.token}
@@ -343,7 +343,7 @@ export function Controls({
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="size-11 flex-none px-0 lg:size-7"
+                          className="size-9 flex-none px-0 lg:size-7"
                           aria-label="Preview"
                           title="Preview"
                           onClick={() => onPreviewFile(link.file)}
@@ -353,7 +353,7 @@ export function Controls({
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="h-11 flex-1 text-xs lg:h-7"
+                          className="h-9 min-w-0 flex-1 text-xs lg:h-7"
                           onClick={() => copyLink(`/api/d/${link.token}`)}
                         >
                           <Copy className="h-3 w-3" /> Copy<span className="lg:hidden"> link</span>
@@ -361,7 +361,7 @@ export function Controls({
                         <Button
                           variant="neutral"
                           size="sm"
-                          className="h-11 flex-1 text-xs lg:h-7"
+                          className="h-9 min-w-0 flex-1 text-xs lg:h-7"
                           asChild
                         >
                           <a href={`/api/d/${link.token}`} download>

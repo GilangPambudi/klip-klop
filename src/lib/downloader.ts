@@ -1,15 +1,28 @@
 import path from "path";
 import fs from "fs";
 import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
+import type { AudioFormat } from "./formats";
 
 interface DownloadOptions {
   url: string;
   from: string; // "HH:mm:ss"
   to: string; // "HH:mm:ss"
   filename: string;
-  /** Max video height in pixels. Omit for best available. */
+  /** Max video height in pixels. Omit for best available. Ignored for audio. */
   height?: number;
+  /** Extract audio only in this format. Omit for an MP4 video. */
+  audio?: AudioFormat;
 }
+
+// Always cut from the m4a stream: --download-sections ignores the start time on
+// YouTube's webm/opus audio (a 10s–13s clip came out as 0s–13s). Only m4a skips re-encoding.
+const AUDIO_SOURCE = "bestaudio[ext=m4a]/bestaudio/best";
+const AUDIO_CODEC: Record<AudioFormat, string> = {
+  mp3: "mp3",
+  m4a: "m4a",
+  ogg: "vorbis",
+  opus: "opus",
+};
 
 export const DOWNLOAD_DIR = path.resolve(process.cwd(), "download");
 
@@ -34,6 +47,7 @@ export async function downloadPart({
   to,
   filename,
   height,
+  audio,
 }: DownloadOptions) {
   const outputFilename = sanitizeFilename(filename || "clip");
 
@@ -61,32 +75,41 @@ export async function downloadPart({
     downloadSections = `*${from}-${to}`;
   }
 
-  const format = height
-    ? `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`
-    : "bestvideo+bestaudio/best";
+  const formatArgs = audio
+    ? [
+        "-f",
+        AUDIO_SOURCE,
+        "-x",
+        "--audio-format",
+        AUDIO_CODEC[audio],
+        "--audio-quality",
+        "0",
+      ]
+    : [
+        "-f",
+        height
+          ? `bestvideo[height<=${height}]+bestaudio/best[height<=${height}]/best`
+          : "bestvideo+bestaudio/best",
+        "--merge-output-format",
+        "mp4",
+        // --merge-output-format only applies when a merge happens; a single
+        // progressive stream would otherwise stay .webm.
+        "--remux-video",
+        "mp4",
+        "--force-keyframes-at-cuts",
+        ...(height ? ["-S", `res:${height}`] : []),
+      ];
 
   const args = [
     url,
     "--no-playlist",
-    "-f",
-    format,
-    "--merge-output-format",
-    "mp4",
-    // --merge-output-format only applies when a merge happens; a single
-    // progressive stream would otherwise stay .webm.
-    "--remux-video",
-    "mp4",
-    "--force-keyframes-at-cuts",
+    ...formatArgs,
     ...YTDLP_COMMON_ARGS,
     "-o",
     outputTemplate,
     "--print",
     "after_move:filepath",
   ];
-
-  if (height) {
-    args.push("-S", `res:${height}`);
-  }
 
   if (downloadSections) {
     args.push("--download-sections", downloadSections);
@@ -95,7 +118,7 @@ export async function downloadPart({
   // ponytail: resolveBinary already checks platform and falls back to system PATH
   args.push("--ffmpeg-location", resolveBinary("ffmpeg").command);
 
-  console.log(`> Downloading: ${url} [${from} - ${to}] @ ${height ?? "best"}`);
+  console.log(`> Downloading: ${url} [${from} - ${to}] @ ${audio ?? height ?? "best"}`);
 
   const { stdout } = await streamTool("yt-dlp", args);
 

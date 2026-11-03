@@ -49,7 +49,7 @@ Top to bottom, in one page scroll:
 2. **URL input**, full width, its own row.
 3. **Player**, 16:9, full width.
 4. **Tabs**: Controls | Downloads (with count).
-5. **Controls tab**: hint, Start, End (label left, three boxes right), Filename, Resolution. Filename and Resolution each get a full row; don't squeeze them into two columns.
+5. **Controls tab**: hint, Start, End (label left, three boxes right), Filename on its own full row, then Format and Quality side by side (both values are short). Quality lists resolutions for MP4 and is a fixed "Best" for audio formats.
 6. **Sticky action bar** fixed to the bottom of the viewport, Controls tab only: Open folder (icon), Preview (icon + label), Download (`main`, icon + label, fills the rest). Pad the scroll content so the bar never covers the last field.
 
 Rules:

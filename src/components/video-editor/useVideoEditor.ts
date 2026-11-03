@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+import { isAudioFormat, type MediaFormat } from "@/lib/formats";
 
 export interface ActiveLink {
   token: string;
@@ -36,6 +37,7 @@ export function useVideoEditor() {
   const [title, setTitle] = useState("");
   const [heights, setHeights] = useState<number[]>([]);
   const [selectedHeight, setSelectedHeight] = useState<string>("");
+  const [format, setFormat] = useState<MediaFormat>("mp4");
   const [isProbing, setIsProbing] = useState(false);
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [recentLinks, setRecentLinks] = useState<ActiveLink[]>([]);
@@ -165,7 +167,7 @@ export function useVideoEditor() {
       .replace(/_{2,}/g, "_")
       .replace(/^_+|_+$/g, "");
 
-  // Title_With_Underscores-75s-1080p
+  // Title_With_Underscores-75s-1080p (audio: Title_With_Underscores-75s-audio)
   const buildFilename = () => {
     if (!title) return "";
 
@@ -174,9 +176,11 @@ export function useVideoEditor() {
     const clipLength = endSec > startSec ? endSec - startSec : 0;
 
     const duration = clipLength > 0 ? `${clipLength}s` : "full";
-    const res = selectedHeight && selectedHeight !== "best"
-      ? `${selectedHeight}p`
-      : "best";
+    const res = isAudioFormat(format)
+      ? "audio"
+      : selectedHeight && selectedHeight !== "best"
+        ? `${selectedHeight}p`
+        : "best";
 
     return `${toUnderscore(title)}-${duration}-${res}`;
   };
@@ -249,6 +253,7 @@ export function useVideoEditor() {
         end: endStr,
         filename: finalFilename,
         height: selectedHeight === "best" ? undefined : Number(selectedHeight),
+        format,
       }),
     }).then(async (res) => {
       const data = await res.json();
@@ -328,6 +333,7 @@ export function useVideoEditor() {
       filename,
       heights,
       selectedHeight,
+      format,
       isProbing,
       downloadUrl,
       recentLinks,
@@ -342,6 +348,7 @@ export function useVideoEditor() {
       setDownloadedFilename,
       setFilename: handleFilenameChange,
       setSelectedHeight,
+      setFormat,
       setStartH,
       setStartM,
       setStartS,

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { contentTypeFor } from "@/lib/formats";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       "Content-Range": `bytes ${start}-${end}/${fileSize}`,
       "Accept-Ranges": "bytes",
       "Content-Length": chunksize.toString(),
-      "Content-Type": "video/mp4",
+      "Content-Type": contentTypeFor(safeFilename),
     };
 
     // return new NextResponse(file as any, { status: 206, headers });
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
   } else {
     const headers = {
       "Content-Length": fileSize.toString(),
-      "Content-Type": "video/mp4",
+      "Content-Type": contentTypeFor(safeFilename),
     };
     const file = fs.createReadStream(filePath);
     // @ts-expect-error: Node stream is compatible with Response body in Next.js runtime

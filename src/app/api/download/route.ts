@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { downloadPart } from "@/lib/downloader";
 import { createLink, sweepExpired } from "@/lib/links";
+import { isAudioFormat } from "@/lib/formats";
 
 export async function POST(req: NextRequest) {
   try {
     sweepExpired();
 
     const body = await req.json();
-    const { url, start, end, filename, height } = body;
+    const { url, start, end, filename, height, format } = body;
 
     if (!url || !start || !end) {
       return NextResponse.json(
         { error: "Missing required fields: url, start, end" },
+        { status: 400 },
+      );
+    }
+
+    if (format !== undefined && format !== "mp4" && !isAudioFormat(format)) {
+      return NextResponse.json(
+        { error: `Unsupported format: ${format}` },
         { status: 400 },
       );
     }
@@ -25,6 +33,7 @@ export async function POST(req: NextRequest) {
       height: Number.isFinite(parsedHeight) && parsedHeight > 0
         ? parsedHeight
         : undefined,
+      audio: isAudioFormat(format) ? format : undefined,
     });
 
     const token = createLink(file);

@@ -19,10 +19,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { AUDIO_FORMATS, isAudioFormat, type MediaFormat } from "@/lib/formats";
 
 interface TimeState {
   h: string;
@@ -56,6 +59,8 @@ interface ControlsProps {
   heights: number[];
   selectedHeight: string;
   setSelectedHeight: (v: string) => void;
+  format: MediaFormat;
+  setFormat: (v: MediaFormat) => void;
   isProbing: boolean;
   downloadUrl: string | null;
   recentLinks: ActiveLink[];
@@ -93,6 +98,8 @@ export function Controls({
   heights,
   selectedHeight,
   setSelectedHeight,
+  format,
+  setFormat,
   isProbing,
   downloadUrl,
   recentLinks,
@@ -214,29 +221,71 @@ export function Controls({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-muted-foreground text-xs sm:text-sm">Resolution</Label>
+              {/* Format + quality side by side, like clipscutter; both values are short. */}
+              <div className="grid grid-cols-2 gap-3">
+              <div className="min-w-0 space-y-2">
+                <Label className="text-muted-foreground text-xs sm:text-sm">Format</Label>
                 <Select
-                  value={selectedHeight}
-                  onValueChange={setSelectedHeight}
+                  value={format}
+                  onValueChange={(v) => setFormat(v as MediaFormat)}
                   disabled={isProbing || !videoId}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue
-                      placeholder={
-                        isProbing ? "Loading..." : "Select resolution"
-                      }
-                    />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="best">Best available</SelectItem>
-                    {heights.map((h) => (
-                      <SelectItem key={h} value={String(h)}>
-                        {h}p
-                      </SelectItem>
-                    ))}
+                    <SelectGroup>
+                      <SelectLabel className="text-xs text-muted-foreground">Video</SelectLabel>
+                      <SelectItem value="mp4">MP4</SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel className="text-xs text-muted-foreground">Audio</SelectLabel>
+                      {AUDIO_FORMATS.map((f) => (
+                        <SelectItem key={f} value={f}>
+                          {f.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="min-w-0 space-y-2">
+                <Label className="text-muted-foreground text-xs sm:text-sm">Quality</Label>
+                {isAudioFormat(format) ? (
+                  // YouTube audio tops out around 128–160 kbps, so "best" is the only useful choice.
+                  <Select value="best" disabled>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="best">Best</SelectItem>
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select
+                    value={selectedHeight}
+                    onValueChange={setSelectedHeight}
+                    disabled={isProbing || !videoId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          isProbing ? "Loading..." : "Select resolution"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="best">Best available</SelectItem>
+                      {heights.map((h) => (
+                        <SelectItem key={h} value={String(h)}>
+                          {h}p
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
               </div>
 
               {downloadUrl && (

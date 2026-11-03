@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { resolveLink, sweepExpired } from "@/lib/links";
+import { contentTypeFor } from "@/lib/formats";
 
 export async function GET(
   _req: NextRequest,
@@ -23,7 +24,7 @@ export async function GET(
   return new Response(file, {
     status: 200,
     headers: {
-      "Content-Type": "video/mp4",
+      "Content-Type": contentTypeFor(entry.filePath),
       "Content-Length": stat.size.toString(),
       "Content-Disposition": `attachment; filename="${path.basename(entry.filename)}"`,
     },

@@ -42,6 +42,8 @@ export default function VideoEditor() {
                         heights={state.heights}
                         selectedHeight={state.selectedHeight}
                         setSelectedHeight={setters.setSelectedHeight}
+                        format={state.format}
+                        setFormat={setters.setFormat}
                         isProbing={state.isProbing}
                         downloadUrl={state.downloadUrl}
                         recentLinks={state.recentLinks}

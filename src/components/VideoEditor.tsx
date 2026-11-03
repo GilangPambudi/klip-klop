@@ -28,6 +28,7 @@ export default function VideoEditor() {
                         isProbing={state.isProbing}
                         onClosePreview={() => setters.setDownloadedFilename(null)}
                         onPlayer={actions.handlePlayer}
+                        trim={state.trim}
                     />
                 </div>
 
@@ -53,6 +54,7 @@ export default function VideoEditor() {
                         downloadedFilename={state.downloadedFilename}
                         onPreview={actions.handlePreview}
                         onPreviewFile={actions.handlePreviewFile}
+                        onDeleteFile={actions.handleDeleteFile}
                         onDownload={actions.handleDownload}
                         onOpenFolder={actions.handleOpenFolder}
                         onInputFocus={actions.handleInputFocus}

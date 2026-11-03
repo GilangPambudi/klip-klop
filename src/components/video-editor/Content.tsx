@@ -14,9 +14,11 @@ interface ContentProps {
     isProbing: boolean;
     onClosePreview: () => void;
     onPlayer?: (player: PlayerHandle | null) => void;
+    /** Trim range in seconds, marked on the source preview's progress bar. */
+    trim: { start: number; end: number };
 }
 
-export function Content({ downloadedFilename, previewUrl, isProbing, onClosePreview, onPlayer }: ContentProps) {
+export function Content({ downloadedFilename, previewUrl, isProbing, onClosePreview, onPlayer, trim }: ContentProps) {
     const src = downloadedFilename
         ? `/api/video?file=${downloadedFilename}`
         : previewUrl;
@@ -32,7 +34,13 @@ export function Content({ downloadedFilename, previewUrl, isProbing, onClosePrev
                     <p className="text-sm font-medium">Loading video…</p>
                 </div>
             ) : src ? (
-                <VideoPlayer src={src} className="absolute inset-0 h-full w-full" onPlayer={onPlayer} />
+                <VideoPlayer
+                    src={src}
+                    className="absolute inset-0 h-full w-full"
+                    onPlayer={onPlayer}
+                    // A finished download is already the clip, so only the source shows the range.
+                    range={downloadedFilename ? undefined : trim}
+                />
             ) : (
                 <div className="aspect-video w-full h-full max-h-full">
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-muted-foreground pointer-events-none">

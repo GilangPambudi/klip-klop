@@ -293,6 +293,26 @@ export function useVideoEditor() {
     }
   };
 
+  const handleDeleteFile = async (link: ActiveLink) => {
+    try {
+      const res = await fetch("/api/links", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: link.token }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Delete failed");
+
+      // Don't leave the player or the share box pointing at a deleted file.
+      if (downloadedFilename === link.file) setDownloadedFilename(null);
+      if (downloadUrl === `/api/d/${link.token}`) setDownloadUrl(null);
+      toast.success(`Deleted ${link.file}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Delete failed");
+    }
+    void refreshLinks();
+  };
+
   const handleStopServer = async () => {
     toast.info("Stopping server...");
 
@@ -342,6 +362,10 @@ export function useVideoEditor() {
         start: { h: startH, m: startM, s: startS },
         end: { h: endH, m: endM, s: endS },
       },
+      trim: {
+        start: getSeconds(startH, startM, startS),
+        end: getSeconds(endH, endM, endS),
+      },
     },
     setters: {
       setVideoUrl: handleUrlChange,
@@ -361,6 +385,7 @@ export function useVideoEditor() {
       handleDownload,
       handlePreview,
       handlePreviewFile,
+      handleDeleteFile,
       handleOpenFolder,
       handleInputFocus,
       syncCurrentTime,

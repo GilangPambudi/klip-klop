@@ -84,6 +84,27 @@ export function listLinks(): ActiveLink[] {
   return links.sort((a, b) => b.createdAt - a.createdAt);
 }
 
+/**
+ * Deletes a download now: its file plus every link pointing at that file (a
+ * re-download with the same name reuses the file). Returns false for an unknown token.
+ */
+export function deleteLink(token: string) {
+  const registry = readRegistry();
+  const entry = registry[token];
+  if (!entry) return false;
+
+  const file = path.basename(entry.file);
+  fs.rmSync(path.join(DOWNLOAD_DIR, file), { force: true });
+
+  const kept: Registry = {};
+  for (const [t, e] of Object.entries(registry)) {
+    if (path.basename(e.file) !== file) kept[t] = e;
+  }
+  writeRegistry(kept);
+  console.log(`> Deleted download: ${file}`);
+  return true;
+}
+
 /** Deletes downloads and link entries after the configured retention period. */
 export function sweepExpired() {
   if (!fs.existsSync(DOWNLOAD_DIR)) return;

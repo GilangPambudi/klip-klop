@@ -26,6 +26,14 @@ Shape: `rounded-base` (5px), `border-2`. Shadows and the press offset exist only
 
 The video surface is the one exception: it is `bg-black` **only while a video is playing**. Empty and loading states use `secondary-background` and `muted-foreground`.
 
+## Player
+
+A native `<video>` with custom controls (layout borrowed from clipscutter.com). Stay native: the same player also plays finished downloads, which a YouTube embed can't.
+
+- Big round play button in the centre while paused; clicking the video toggles play.
+- Bottom bar on a black-to-transparent gradient: play/pause, back 5s, stop, forward 5s, `current / duration`, then mute and fullscreen on the right. White icons on black in every theme.
+- Progress bar: played part in white, the Start/End trim range as a lighter band with tick marks at both ends. Only the source preview shows the range; a finished download is already the clip.
+
 ## Layout
 
 One breakpoint carries the layout: **`lg` (1024px)**. The JS that scrolls the player into view after a URL is pasted uses the same line (`max-width: 1023px`). Keep both in sync.
@@ -60,7 +68,7 @@ Rules:
 - **Tab switch** (`ui/tabs.tsx` + `[data-tab-content]` in `globals.css`): the old panel fades out over 150ms on top of the new one, and the new panel's sections fade in over 400ms, staggered by 100ms (same timing as tms-geu). Off under `prefers-reduced-motion`.
 - **Scroll areas never grow sideways.** The `ScrollArea` viewport forces Radix's inner `display: table` wrapper to `block`, so long filenames wrap instead of widening the card.
 - **Icon-only buttons need `aria-label`**: Open folder (mobile bar), theme, stop server, and Preview in the Downloads list.
-- **Downloads tab items**: filename, then size and expiry in `muted-foreground`, then one row of buttons: Preview (icon only, at every width), Copy link (icon + label), Download (icon + label).
+- **Downloads tab items**: filename, then size and expiry in `muted-foreground`, then one row of buttons: Preview (icon only, at every width), Copy link (icon + label), Download (icon + label), Delete (icon only, confirms in an AlertDialog first).
 
 ### Time inputs stay as three boxes
 

@@ -8,7 +8,19 @@ import {
   Copy,
   ExternalLink,
   History,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -70,6 +82,7 @@ interface ControlsProps {
   downloadedFilename: string | null;
   onPreview: () => void;
   onPreviewFile: (file: string) => void;
+  onDeleteFile: (link: ActiveLink) => void;
   onDownload: () => void;
   onOpenFolder: () => void;
   onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
@@ -109,6 +122,7 @@ export function Controls({
   downloadedFilename,
   onPreview,
   onPreviewFile,
+  onDeleteFile,
   onDownload,
   onOpenFolder,
   onInputFocus,
@@ -417,6 +431,33 @@ export function Controls({
                             <Download className="h-3 w-3" /> <span className="lg:hidden">Download</span><span className="hidden lg:inline">Get</span>
                           </a>
                         </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="neutral"
+                              size="sm"
+                              className="size-9 flex-none px-0 lg:size-7"
+                              aria-label="Delete"
+                              title="Delete"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this download?</AlertDialogTitle>
+                              <AlertDialogDescription className="wrap-anywhere">
+                                {link.file} will be removed from the server and its share link will stop working.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => onDeleteFile(link)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   ))}

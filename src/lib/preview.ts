@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { cookieArgs } from "./cookies";
 import { DOWNLOAD_DIR } from "./downloader";
 import { resolveBinary, runTool, YTDLP_COMMON_ARGS } from "./runtime";
 
@@ -32,6 +33,7 @@ export async function probeWithPreview(url: string) {
 
   const { stdout } = await runTool("yt-dlp", [
     ...YTDLP_COMMON_ARGS,
+    ...(await cookieArgs(url)),
     url,
     "--no-playlist",
     "--no-warnings",

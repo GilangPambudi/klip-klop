@@ -106,6 +106,7 @@ These take effect without a restart:
 | `default_height` | `720`, `1080`, ... or `max` | Resolution preselected for a new video: the best one at or below this |
 | `default_theme` | `mono` or `neon` (light or dark to match the visitor's device), or a fixed `mono-light`, `mono-dark`, `neon-light`, `neon-dark` | Theme for visitors who have not picked one |
 | `retention_hours` | a positive number | Hours before a finished download is deleted |
+| `instagram_sessionid` | the `sessionid` cookie of a logged-in Instagram account | Lets the server load Instagram posts that need a login; leave the row out to go without |
 
 A missing or invalid value falls back to `max`, `mono` and `24`.
 

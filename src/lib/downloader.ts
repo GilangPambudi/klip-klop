@@ -3,6 +3,7 @@ import fs from "fs";
 import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
 import type { AudioFormat } from "./formats";
 import { uniqueBase } from "./filenames";
+import { cookieArgs } from "./cookies";
 
 interface DownloadOptions {
   url: string;
@@ -99,6 +100,7 @@ export async function downloadPart({
     "--no-playlist",
     ...formatArgs,
     ...YTDLP_COMMON_ARGS,
+    ...(await cookieArgs(url)),
     "-o",
     outputTemplate,
     "--print",

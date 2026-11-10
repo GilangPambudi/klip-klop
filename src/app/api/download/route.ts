@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { downloadPart } from "@/lib/downloader";
 import { createLink, sweepExpired } from "@/lib/links";
 import { isAudioFormat } from "@/lib/formats";
+import { parseLink } from "@/lib/platforms";
 import { displayName } from "@/lib/filenames";
 import { getAccount, refundCredit, takeCredit } from "@/lib/db/accounts";
 import { currentAccount } from "@/auth";
@@ -26,10 +27,10 @@ export async function POST(req: NextRequest) {
     await sweepExpired();
 
     const body = await req.json();
-    const { url, start, end, filename, height, format } = body;
+    const { start, end, filename, height, format } = body;
 
     if (
-      typeof url !== "string" || !url ||
+      typeof body.url !== "string" || !body.url ||
       typeof start !== "string" || !start ||
       typeof end !== "string" || !end
     ) {
@@ -38,6 +39,15 @@ export async function POST(req: NextRequest) {
         { status: 400 },
       );
     }
+
+    const link = parseLink(body.url);
+    if (!link?.platform || !link.key) {
+      return NextResponse.json(
+        { error: "This link is not supported" },
+        { status: 400 },
+      );
+    }
+    const url = link.url;
 
     if (format !== undefined && format !== "mp4" && !isAudioFormat(format)) {
       return NextResponse.json(

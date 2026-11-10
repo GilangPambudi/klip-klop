@@ -1,6 +1,6 @@
 # Klip-Klop
 
-**Klip-Klop** trims YouTube videos. Paste a link, set a start and an end, and download just that part as a video or as audio. Live at [klip.pambudi.dev](https://klip.pambudi.dev).
+**Klip-Klop** trims YouTube, TikTok, and Instagram videos. Paste a link, set a start and an end, and download just that part as a video or as audio. Live at [klip.pambudi.dev](https://klip.pambudi.dev).
 
 ## Features
 

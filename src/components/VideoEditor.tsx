@@ -35,6 +35,10 @@ export default function VideoEditor({ user, providers, defaultHeight }: VideoEdi
                 onLogin={() => setters.setLoginOpen(true)}
                 videoUrl={state.videoUrl}
                 setVideoUrl={setters.setVideoUrl}
+                platformChoice={state.platformChoice}
+                setPlatformChoice={setters.setPlatformChoice}
+                detectedPlatform={state.detectedPlatform}
+                linkUnsupported={state.linkUnsupported}
                 onInputFocus={actions.handleInputFocus}
             />
 

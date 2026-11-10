@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { AUTH_CHANNEL } from "@/lib/utils";
 import { formatClock, linkStartSeconds } from "@/lib/youtube";
 import { isAudioFormat, type MediaFormat } from "@/lib/formats";
+import { parseLink, type PlatformId } from "@/lib/platforms";
+
+export type PlatformChoice = "auto" | PlatformId;
 
 export interface ActiveLink {
   token: string;
@@ -31,6 +34,7 @@ export function useVideoEditor(
   const credits = latestCredits ?? initialCredits;
   const [videoUrl, setVideoUrl] = useState("");
   const [videoId, setVideoId] = useState("");
+  const [platformChoice, setPlatformChoice] = useState<PlatformChoice>("auto");
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Direct stream URL (no YouTube iframe) for the preview player.
@@ -215,19 +219,19 @@ export function useVideoEditor(
   // Auto-Load
   const handleUrlChange = (url: string, offerStart = true) => {
     setVideoUrl(url);
-    const regExp =
-      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
-    const match = url.match(regExp);
-    if (match && match[2].length === 11) {
-      const newId = match[2];
-      if (newId !== videoId) {
-        setVideoId(newId);
+    const link = parseLink(url);
+    if (link?.platform && link.key) {
+      if (platformChoice !== "auto" && platformChoice !== link.platform) {
+        setPlatformChoice(link.platform);
+      }
+      if (link.key !== videoId) {
+        setVideoId(link.key);
         setDownloadedFilename(null);
         setDownloadUrl(null);
         setCustomFilename(null);
-        probeVideo(url);
+        probeVideo(link.url);
 
-        const linkStart = linkStartSeconds(url);
+        const linkStart = link.platform === "youtube" ? linkStartSeconds(url) : 0;
         if (offerStart && linkStart > 0) offerLinkStart(linkStart);
 
         // On mobile the header pushes the player off-screen, so dismiss the
@@ -286,6 +290,10 @@ export function useVideoEditor(
     }
   };
 
+
+  const parsedLink = parseLink(videoUrl);
+  const detectedPlatform = parsedLink?.platform ?? null;
+  const linkUnsupported = !!parsedLink && !parsedLink.platform && parsedLink.hasPath;
 
   const getSeconds = (h: string, m: string, s: string) => {
     return (
@@ -395,7 +403,7 @@ export function useVideoEditor(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        url: videoUrl,
+        url: parsedLink?.url ?? videoUrl,
         start: startStr,
         end: endStr,
         filename: finalFilename,
@@ -475,6 +483,9 @@ export function useVideoEditor(
     state: {
       videoUrl,
       videoId,
+      platformChoice,
+      detectedPlatform,
+      linkUnsupported,
       previewUrl,
       isPlaying,
       downloadedFilename,
@@ -500,6 +511,7 @@ export function useVideoEditor(
     },
     setters: {
       setVideoUrl: handleUrlChange,
+      setPlatformChoice,
       setDownloadedFilename,
       setFilename: handleFilenameChange,
       setSelectedHeight,

@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 
 const title = "Klip-Klop · Clip the part that you klop";
 const description =
-  "Paste a YouTube link, set a start and an end, download the clip as MP4 or audio.";
+  "Paste a YouTube, TikTok, or Instagram link, set a start and an end, download the clip as MP4 or audio.";
 
 export const metadata: Metadata = {
   // Link previews need absolute URLs; AUTH_URL is the app's public address.

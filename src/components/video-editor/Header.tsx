@@ -5,10 +5,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
+import type { PlatformChoice } from "@/components/video-editor/useVideoEditor";
 
 interface HeaderProps {
     videoUrl: string;
     setVideoUrl: (url: string) => void;
+    platformChoice: PlatformChoice;
+    setPlatformChoice: (choice: PlatformChoice) => void;
+    detectedPlatform: PlatformId | null;
+    linkUnsupported: boolean;
     onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
     /** False on the local launcher, where there is no sign-in at all. */
     authEnabled: boolean;
@@ -18,7 +25,20 @@ interface HeaderProps {
     onLogin: () => void;
 }
 
-export function Header({ videoUrl, setVideoUrl, onInputFocus, authEnabled, user, credits, onLogin }: HeaderProps) {
+const supportedNames = PLATFORMS.map((p) => p.label).join(", ");
+
+export function Header({ videoUrl, setVideoUrl, platformChoice, setPlatformChoice, detectedPlatform, linkUnsupported, onInputFocus, authEnabled, user, credits, onLogin }: HeaderProps) {
+    const choiceLabel =
+        platformChoice !== "auto"
+            ? platformLabel(platformChoice)
+            : detectedPlatform
+              ? `Auto · ${platformLabel(detectedPlatform)}`
+              : "Auto detect";
+    const placeholder =
+        platformChoice === "auto"
+            ? `Paste a ${supportedNames.replace(/, ([^,]*)$/, ", or $1")} link`
+            : `Paste a ${platformLabel(platformChoice)} link`;
+
     return (
         <Card className="flex-none p-1">
             {/* Mobile: logo + buttons on row 1, URL wraps to row 2. Desktop: one row. */}
@@ -33,15 +53,36 @@ export function Header({ videoUrl, setVideoUrl, onInputFocus, authEnabled, user,
                     <h3 className="font-bold text-base lg:text-lg">Klip-Klop</h3>
                 </div>
 
-                <div className="relative order-last w-full min-w-0 lg:order-none lg:w-auto lg:flex-1">
-                    <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        className="pl-9"
-                        placeholder="Paste YouTube Video ID or URL"
-                        value={videoUrl}
-                        onChange={(e) => setVideoUrl(e.target.value)}
-                        onFocus={onInputFocus}
-                    />
+                <div className="order-last flex w-full min-w-0 flex-wrap items-center gap-2 lg:order-none lg:w-auto lg:flex-1">
+                    <Select value={platformChoice} onValueChange={(v) => setPlatformChoice(v as PlatformChoice)}>
+                        <SelectTrigger className="w-36 flex-none" aria-label="Platform">
+                            <SelectValue>{choiceLabel}</SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="auto">Auto detect</SelectItem>
+                            {PLATFORMS.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                    {p.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <div className="relative min-w-0 flex-1">
+                        <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            className="pl-9"
+                            placeholder={placeholder}
+                            value={videoUrl}
+                            onChange={(e) => setVideoUrl(e.target.value)}
+                            onFocus={onInputFocus}
+                            aria-invalid={linkUnsupported}
+                        />
+                    </div>
+                    {linkUnsupported && (
+                        <p role="alert" className="w-full text-xs text-muted-foreground">
+                            This site is not supported yet. Supported: {supportedNames}.
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-2 flex-none">

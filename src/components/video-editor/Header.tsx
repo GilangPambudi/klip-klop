@@ -58,7 +58,8 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
                 </div>
 
                 <div className="flex items-center gap-2 flex-none">
-                    <ModeToggle />
+                    {/* With accounts on, the theme picker lives in the profile dialog. The local launcher has no profile, so it keeps the button. */}
+                    {!authEnabled && <ModeToggle />}
                     {authEnabled && (user ? (
                         <UserMenu user={user} credits={credits} />
                     ) : (

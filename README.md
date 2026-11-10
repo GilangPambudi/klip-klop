@@ -61,10 +61,10 @@ Site-wide settings live in the `config` table and take effect without a restart:
 | name | value | meaning |
 |---|---|---|
 | `default_height` | `720`, `1080`, ... or `max` | Resolution preselected for a new video: the best one at or below this |
-| `default_theme` | `mono-light`, `mono-dark`, `neon-light`, `neon-dark` | Theme for visitors who have not picked one |
+| `default_theme` | `mono` or `neon` (light or dark to match the visitor's device), or a fixed `mono-light`, `mono-dark`, `neon-light`, `neon-dark` | Theme for visitors who have not picked one |
 | `retention_hours` | a positive number | Hours before a finished download is deleted |
 
-A missing or invalid value falls back to `max`, `mono-light` and `24`.
+A missing or invalid value falls back to `max`, `mono` and `24`.
 
 In the `users` table, set `unlimited` to `1` to stop charging an account credits, or `banned` to `1` to block its downloads.
 

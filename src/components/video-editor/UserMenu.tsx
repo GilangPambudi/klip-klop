@@ -20,6 +20,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ModeToggle } from "@/components/mode-toggle";
 import { PROVIDER_LABELS } from "@/components/video-editor/LoginDialog";
 import { logoutAction } from "@/lib/auth-actions";
 import { cn } from "@/lib/utils";
@@ -108,6 +109,8 @@ export function UserMenu({ user, credits }: { user: SessionUser; credits: number
                         <dd>{user.banned ? "Banned: this account cannot download" : creditsLabel(credits)}</dd>
                         <dt className="text-muted-foreground">Account ID</dt>
                         <dd className="font-mono break-all">{user.id}</dd>
+                        <dt className="self-center text-muted-foreground">Theme</dt>
+                        <dd><ModeToggle labeled /></dd>
                     </dl>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Close</AlertDialogCancel>

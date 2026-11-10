@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AUTH_CHANNEL } from "@/lib/utils";
+import { formatClock, linkStartSeconds } from "@/lib/youtube";
 import { isAudioFormat, type MediaFormat } from "@/lib/formats";
 
 export interface ActiveLink {
@@ -96,7 +97,8 @@ export function useVideoEditor(
       const draft = JSON.parse(raw);
 
       pendingHeightRef.current = draft.selectedHeight || null;
-      handleUrlChange(draft.videoUrl);
+      // The draft already holds the Start the visitor chose; don't offer the link's again.
+      handleUrlChange(draft.videoUrl, false);
       setStartH(draft.start[0]);
       setStartM(draft.start[1]);
       setStartS(draft.start[2]);
@@ -159,8 +161,59 @@ export function useVideoEditor(
   const handlePlayerPlaying = () => setIsPlaying(true);
   const handlePlayerPaused = () => setIsPlaying(false);
 
+  // Start and End as they are right now, for toast buttons: those are clicked
+  // long after the render that created them.
+  const timesRef = useRef({ start: ["0", "0", "0"], end: ["0", "0", "0"] });
+  useEffect(() => {
+    timesRef.current = {
+      start: [startH, startM, startS],
+      end: [endH, endM, endS],
+    };
+  });
+
+  const applyTimes = (start: string[], end: string[]) => {
+    setStartH(start[0]);
+    setStartM(start[1]);
+    setStartS(start[2]);
+    setEndH(end[0]);
+    setEndM(end[1]);
+    setEndS(end[2]);
+  };
+
+  // A link's t= is often just where someone stopped watching, not where they
+  // want the clip to begin. So it is offered, never applied on its own.
+  const offerLinkStart = (seconds: number) => {
+    toast(`This link starts at ${formatClock(seconds)}`, {
+      duration: 12000,
+      action: {
+        label: "Use as Start",
+        onClick: () => {
+          const before = timesRef.current;
+          const [bh, bm, bs] = before.end;
+          const endSeconds = getSeconds(bh, bm, bs);
+          applyTimes(
+            [
+              String(Math.floor(seconds / 3600)),
+              String(Math.floor((seconds % 3600) / 60)),
+              String(seconds % 60),
+            ],
+            // An End at or before the new Start would be an empty clip; 0 means "to the end".
+            endSeconds !== 0 && endSeconds <= seconds ? ["0", "0", "0"] : before.end,
+          );
+          toast.success(`Start set to ${formatClock(seconds)}`, {
+            duration: 8000,
+            action: {
+              label: "Undo",
+              onClick: () => applyTimes(before.start, before.end),
+            },
+          });
+        },
+      },
+    });
+  };
+
   // Auto-Load
-  const handleUrlChange = (url: string) => {
+  const handleUrlChange = (url: string, offerStart = true) => {
     setVideoUrl(url);
     const regExp =
       /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
@@ -173,6 +226,9 @@ export function useVideoEditor(
         setDownloadUrl(null);
         setCustomFilename(null);
         probeVideo(url);
+
+        const linkStart = linkStartSeconds(url);
+        if (offerStart && linkStart > 0) offerLinkStart(linkStart);
 
         // On mobile the header pushes the player off-screen, so dismiss the
         // keyboard and bring the video and its controls into view.
@@ -408,28 +464,6 @@ export function useVideoEditor(
     void refreshLinks();
   };
 
-  const handleStopServer = async () => {
-    toast.info("Stopping server...");
-
-    // Fire and forget shutdown request
-    fetch("/api/shutdown", { method: "POST" }).catch((err) =>
-      console.error("Shutdown request failed (expected):", err),
-    );
-
-    // Replace body with offline UI
-    setTimeout(() => {
-      document.body.innerHTML = `
-            <div class="fixed inset-0 bg-background flex flex-col items-center justify-center space-y-4 text-center p-4 animate-in fade-in duration-300">
-              <div class="rounded-base border-2 border-border bg-secondary-background shadow-shadow p-4">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-12 w-12 text-main"><path d="M12 2v10"/><path d="M18.4 6.6a9 9 0 1 1-12.77 0"/></svg>
-              </div>
-              <h1 class="text-2xl font-bold">Server Stopped</h1>
-              <p class="text-muted-foreground">The server has been stopped. You can now close this tab.</p>
-            </div>
-        `;
-    }, 500);
-  };
-
   const handleOpenFolder = async () => {
     await fetch("/api/open-folder", { method: "POST" });
   };
@@ -479,7 +513,6 @@ export function useVideoEditor(
       setEndS,
     },
     actions: {
-      handleStopServer,
       handleDownload,
       saveDraft,
       handlePreview,

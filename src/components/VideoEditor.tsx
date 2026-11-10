@@ -35,9 +35,7 @@ export default function VideoEditor({ user, providers, defaultHeight }: VideoEdi
                 onLogin={() => setters.setLoginOpen(true)}
                 videoUrl={state.videoUrl}
                 setVideoUrl={setters.setVideoUrl}
-                isLocalhost={state.isLocalhost}
                 onInputFocus={actions.handleInputFocus}
-                onStopServer={actions.handleStopServer}
             />
 
             {/* grid-rows-1 = minmax(0,1fr): an `auto` row would grow with the controls and overflow 90vh. */}

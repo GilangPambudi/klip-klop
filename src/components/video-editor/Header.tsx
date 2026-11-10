@@ -1,18 +1,7 @@
 import React from "react";
-import { Link, LogIn, Power } from "lucide-react";
+import { Link, LogIn } from "lucide-react";
 import { UserMenu, type SessionUser } from "@/components/video-editor/UserMenu";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -20,9 +9,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 interface HeaderProps {
     videoUrl: string;
     setVideoUrl: (url: string) => void;
-    isLocalhost: boolean;
     onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
-    onStopServer: () => void;
     /** False on the local launcher, where there is no sign-in at all. */
     authEnabled: boolean;
     user: SessionUser | null;
@@ -31,7 +18,7 @@ interface HeaderProps {
     onLogin: () => void;
 }
 
-export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onStopServer, authEnabled, user, credits, onLogin }: HeaderProps) {
+export function Header({ videoUrl, setVideoUrl, onInputFocus, authEnabled, user, credits, onLogin }: HeaderProps) {
     return (
         <Card className="flex-none p-1">
             {/* Mobile: logo + buttons on row 1, URL wraps to row 2. Desktop: one row. */}
@@ -67,29 +54,6 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
                             <LogIn className="h-5 w-5" />
                         </Button>
                     ))}
-                    {isLocalhost && (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="neutral" size="icon" title="Stop Server" aria-label="Stop server">
-                                    <Power className="h-5 w-5" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Stop Server?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will shut down the local server and close the application window. Are you sure?
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={onStopServer}>
-                                        Stop Server
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
                 </div>
             </CardContent>
         </Card>

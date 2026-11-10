@@ -53,7 +53,7 @@ Design: "A · Stack + sticky bar" in the [mobile canvas](https://claude.ai/artif
 
 Top to bottom, in one page scroll:
 
-1. **Header**: logo, name, then two 40px icon buttons, theme and stop server. The theme picker is icon-only at every width; it opens the theme list.
+1. **Header**: logo, name, then one 40px square tile: the account avatar (opens a menu with Profile and Log out), or a Log in icon button when signed out. The theme picker lives in the Profile dialog; only the local launcher, which has no accounts, keeps an icon-only theme button here.
 2. **URL input**, full width, its own row.
 3. **Player**, 16:9, full width.
 4. **Tabs**: Controls | Downloads (with count).
@@ -67,7 +67,7 @@ Rules:
 - **Tight spacing.** Page padding `px-3 pt-3`, cards `p-3`, gaps `gap-3`; desktop keeps its larger values. Bottom padding `pb-20` leaves room for the sticky bar.
 - **Tab switch** (`ui/tabs.tsx` + `[data-tab-content]` in `globals.css`): the old panel fades out over 150ms on top of the new one, and the new panel's sections fade in over 400ms, staggered by 100ms (same timing as tms-geu). Off under `prefers-reduced-motion`.
 - **Scroll areas never grow sideways.** The `ScrollArea` viewport forces Radix's inner `display: table` wrapper to `block`, so long filenames wrap instead of widening the card.
-- **Icon-only buttons need `aria-label`**: Open folder (mobile bar), theme, stop server, and Preview in the Downloads list.
+- **Icon-only buttons need `aria-label`**: Open folder (mobile bar), Log in, the account avatar, the header theme button, and Preview in the Downloads list.
 - **Downloads tab items**: filename, then size and expiry in `muted-foreground`, then one row of buttons: Preview (icon only, at every width), Copy link (icon + label), Download (icon + label), Delete (icon only, confirms in an AlertDialog first).
 
 ### Time inputs stay as three boxes

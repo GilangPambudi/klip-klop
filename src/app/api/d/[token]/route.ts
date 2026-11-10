@@ -8,10 +8,10 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
-  sweepExpired();
+  await sweepExpired();
 
   const { token } = await params;
-  const entry = resolveLink(token);
+  const entry = await resolveLink(token);
 
   if (!entry) {
     return new NextResponse("Link not found or expired", { status: 404 });

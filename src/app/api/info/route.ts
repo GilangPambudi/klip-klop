@@ -4,7 +4,7 @@ import { sweepExpired } from "@/lib/links";
 
 export async function POST(req: NextRequest) {
   try {
-    sweepExpired();
+    await sweepExpired();
 
     const { url } = await req.json();
     if (!url || typeof url !== "string") {

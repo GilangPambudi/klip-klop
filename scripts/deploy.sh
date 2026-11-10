@@ -20,6 +20,10 @@ else
   echo "Dependencies unchanged, skipping npm ci."
 fi
 
+if ! git diff --quiet "$old_head" "$new_head" -- drizzle; then
+  echo "NOTE: new database migration. Run: npm run db:migrate"
+fi
+
 echo "Building..."
 npm run build > /tmp/klip-klop-build.log 2>&1 || { tail -30 /tmp/klip-klop-build.log; exit 1; }
 sudo systemctl restart klip-klop

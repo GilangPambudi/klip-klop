@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { AUTH_CHANNEL } from "@/lib/utils";
 import { isAudioFormat, type MediaFormat } from "@/lib/formats";
 
 export interface ActiveLink {
   token: string;
+  /** Name on disk, used to play it back. */
   file: string;
+  /** Name to show. */
+  name: string;
   createdAt: number;
   expiresAt: number;
   size: number;
@@ -16,9 +21,13 @@ const DRAFT_KEY = "klip-klop-draft";
 export function useVideoEditor(
   needsLogin: boolean,
   initialCredits: number | null,
+  defaultHeight: number | null,
 ) {
+  const router = useRouter();
+  // The balance from the page load, until a download reports a newer one.
   // null = an account that is never charged (or sign-in is off).
-  const [credits, setCredits] = useState(initialCredits);
+  const [latestCredits, setCredits] = useState<number | undefined>();
+  const credits = latestCredits ?? initialCredits;
   const [videoUrl, setVideoUrl] = useState("");
   const [videoId, setVideoId] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -110,6 +119,18 @@ export function useVideoEditor(
         // Non-critical; the list just stays as-is.
       });
 
+  // The sign-in popup finished: pick up the session without reloading, so the
+  // video and every field stay exactly as they were.
+  useEffect(() => {
+    const channel = new BroadcastChannel(AUTH_CHANNEL);
+    channel.onmessage = () => {
+      setLoginOpen(false);
+      router.refresh();
+      void refreshLinks();
+    };
+    return () => channel.close();
+  }, [router]);
+
   // Opening the download folder only makes sense on the machine running the
   // server, so hide it when the app is reached over the network.
   const isLocalhost = useSyncExternalStore(
@@ -187,9 +208,15 @@ export function useVideoEditor(
 
       setTitle(data.title || "");
       setHeights(data.heights || []);
+      // Heights come sorted high to low. Preselect the site default, or the
+      // closest one below it; a video with nothing that low gets its lowest.
+      const heights: number[] = data.heights || [];
+      const preferred =
+        defaultHeight === null
+          ? heights[0]
+          : (heights.find((h) => h <= defaultHeight) ?? heights.at(-1));
       setSelectedHeight(
-        restoredHeight ??
-          (data.heights?.length ? String(data.heights[0]) : "best"),
+        restoredHeight ?? (preferred ? String(preferred) : "best"),
       );
       setPreviewUrl(data.directUrl || "");
       // Only announce success once info + preview are actually ready.
@@ -335,8 +362,8 @@ export function useVideoEditor(
         if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
         refreshLinks();
         return typeof data.credits === "number"
-          ? `Download complete: ${data.file} (${data.credits} ${data.credits === 1 ? "credit" : "credits"} left)`
-          : `Download complete: ${data.file}`;
+          ? `Download complete: ${data.name} (${data.credits} ${data.credits === 1 ? "credit" : "credits"} left)`
+          : `Download complete: ${data.name}`;
       },
       error: (err) => {
         setIsDownloading(false);
@@ -374,7 +401,7 @@ export function useVideoEditor(
       // Don't leave the player or the share box pointing at a deleted file.
       if (downloadedFilename === link.file) setDownloadedFilename(null);
       if (downloadUrl === `/api/d/${link.token}`) setDownloadUrl(null);
-      toast.success(`Deleted ${link.file}`);
+      toast.success(`Deleted ${link.name}`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Delete failed");
     }

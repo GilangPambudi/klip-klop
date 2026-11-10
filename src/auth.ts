@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import Google from "next-auth/providers/google";
+import { getAccount, touchUser } from "@/lib/db/accounts";
 
 // No AUTH_SECRET = the local launcher: nobody signs in and every download belongs to one "local" user.
 export const authEnabled = Boolean(process.env.AUTH_SECRET);
@@ -27,10 +28,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   trustHost: true,
   callbacks: {
-    jwt({ token, account }) {
-      // Prefixed so a Discord ID can never collide with a Google one.
+    async jwt({ token, account }) {
+      // `account` is only present on the sign-in itself.
       if (account) {
-        token.uid = `${account.provider}:${account.providerAccountId}`;
+        // Prefixed so a Discord ID can never collide with a Google one.
+        const id = `${account.provider}:${account.providerAccountId}`;
+        token.uid = id;
+        await touchUser({
+          id,
+          provider: account.provider,
+          name: token.name ?? "",
+          image: token.picture ?? null,
+        });
       }
       return token;
     },
@@ -41,8 +50,39 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-/** Owner key for downloads, or null when the visitor has to sign in first. */
-export async function currentUserId() {
-  if (!authEnabled) return "local";
-  return (await auth())?.user?.id || null;
+let localUserReady: Promise<void> | undefined;
+
+/**
+ * The account behind this request with its balance and ban flag, or null when
+ * the visitor has to sign in first.
+ */
+export async function currentAccount() {
+  if (!authEnabled) {
+    localUserReady ??= touchUser({
+      id: "local",
+      provider: "local",
+      name: "Local",
+      image: null,
+      unlimited: true,
+    });
+    await localUserReady;
+    const account = await getAccount("local");
+    return account && { id: "local", ...account };
+  }
+
+  const user = (await auth())?.user;
+  if (!user?.id) return null;
+
+  let account = await getAccount(user.id);
+  if (!account) {
+    // A session from before the database existed: the cookie is valid but there is no row yet.
+    await touchUser({
+      id: user.id,
+      provider: user.id.split(":")[0],
+      name: user.name ?? "",
+      image: user.image ?? null,
+    });
+    account = await getAccount(user.id);
+  }
+  return account && { id: user.id, ...account };
 }

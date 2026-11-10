@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { contentTypeFor } from "@/lib/formats";
+import { ownsFile } from "@/lib/filenames";
+import { currentAccount } from "@/auth";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -15,7 +17,10 @@ export async function GET(req: NextRequest) {
   const safeFilename = path.basename(filename);
   const filePath = path.resolve(process.cwd(), "download", safeFilename);
 
-  if (!fs.existsSync(filePath)) {
+  // Previews are private: only the account whose prefix the file carries may
+  // play it. Anyone else gets the same answer as for a missing file.
+  const account = await currentAccount();
+  if (!account || !ownsFile(account.id, safeFilename) || !fs.existsSync(filePath)) {
     return new NextResponse("File not found", { status: 404 });
   }
 

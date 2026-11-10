@@ -1,124 +1,131 @@
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { DOWNLOAD_DIR } from "./downloader";
+import { displayName } from "./filenames";
+import { db } from "./db/index";
+import { downloads } from "./db/schema";
+import { getConfig } from "./db/config";
 
-const REGISTRY_PATH = path.join(DOWNLOAD_DIR, ".links.json");
-const TTL_MS =
-  Number(process.env.DOWNLOAD_RETENTION_HOURS ?? 24) * 60 * 60 * 1000;
-
-if (!Number.isFinite(TTL_MS) || TTL_MS <= 0) {
-  throw new Error("DOWNLOAD_RETENTION_HOURS must be a positive number");
+/** How long a finished download lives, from `retention_hours` in the config table. */
+async function retentionMs() {
+  return (await getConfig()).retentionHours * 60 * 60 * 1000;
 }
 
-// ponytail: files are keyed by name only, so two users picking the same filename share
-// (and overwrite) one file. Put downloads in a per-owner folder if that ever bites.
-interface LinkEntry {
+interface NewLink {
+  /** Name on disk, as returned by downloadPart. */
   file: string;
-  createdAt: number;
-  /** Who made it. Entries from before sign-in existed have none and belong to nobody. */
-  owner?: string;
+  owner: string;
+  sourceUrl: string;
+  start: string;
+  end: string;
+  format: string;
 }
 
-type Registry = Record<string, LinkEntry>;
-
-function readRegistry(): Registry {
-  try {
-    return JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8")) as Registry;
-  } catch {
-    return {};
-  }
-}
-
-function writeRegistry(registry: Registry) {
-  fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
-  fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2), "utf8");
-}
-
-export function createLink(file: string, owner: string) {
+export async function createLink({ file, owner, sourceUrl, start, end, format }: NewLink) {
   const token = crypto.randomBytes(9).toString("base64url");
-  const registry = readRegistry();
-  registry[token] = { file, createdAt: Date.now(), owner };
-  writeRegistry(registry);
+  const now = Date.now();
+  await db().insert(downloads).values({
+    token,
+    userId: owner,
+    file,
+    sourceUrl: sourceUrl.slice(0, 512),
+    startTime: start,
+    endTime: end,
+    format,
+    createdAt: new Date(now),
+    expiresAt: new Date(now + (await retentionMs())),
+  });
   return token;
 }
 
-export function resolveLink(token: string) {
-  const entry = readRegistry()[token];
-  if (!entry) return null;
-  if (Date.now() - entry.createdAt > TTL_MS) return null;
+export async function resolveLink(token: string) {
+  const [row] = await db()
+    .select()
+    .from(downloads)
+    .where(and(eq(downloads.token, token), gt(downloads.expiresAt, new Date())));
+  if (!row) return null;
 
-  // The registry stores a bare filename, but treat it as untrusted anyway.
-  const filePath = path.join(DOWNLOAD_DIR, path.basename(entry.file));
+  // The row stores a bare filename, but treat it as untrusted anyway.
+  const filePath = path.join(DOWNLOAD_DIR, path.basename(row.file));
   if (!fs.existsSync(filePath)) return null;
 
-  return { filePath, filename: path.basename(entry.file) };
+  return { filePath, filename: displayName(row.userId, path.basename(row.file)) };
 }
 
 export interface ActiveLink {
   token: string;
+  /** Name on disk; what /api/video?file= expects. */
   file: string;
+  /** Name to show: the file without its owner prefix. */
+  name: string;
   createdAt: number;
   expiresAt: number;
   size: number;
 }
 
 /** The owner's links whose file still exists and whose retention window has not closed. */
-export function listLinks(owner: string): ActiveLink[] {
-  const cutoff = Date.now() - TTL_MS;
+export async function listLinks(owner: string): Promise<ActiveLink[]> {
+  const rows = await db()
+    .select()
+    .from(downloads)
+    .where(and(eq(downloads.userId, owner), gt(downloads.expiresAt, new Date())))
+    .orderBy(desc(downloads.createdAt));
+
   const links: ActiveLink[] = [];
-
-  for (const [token, entry] of Object.entries(readRegistry())) {
-    if (entry.owner !== owner || entry.createdAt < cutoff) continue;
-
-    const filePath = path.join(DOWNLOAD_DIR, path.basename(entry.file));
+  for (const row of rows) {
+    const file = path.basename(row.file);
     try {
       links.push({
-        token,
-        file: path.basename(entry.file),
-        createdAt: entry.createdAt,
-        expiresAt: entry.createdAt + TTL_MS,
-        size: fs.statSync(filePath).size,
+        token: row.token,
+        file,
+        name: displayName(owner, file),
+        createdAt: row.createdAt.getTime(),
+        expiresAt: row.expiresAt.getTime(),
+        size: fs.statSync(path.join(DOWNLOAD_DIR, file)).size,
       });
     } catch {
       // File is gone; skip it.
     }
   }
-
-  return links.sort((a, b) => b.createdAt - a.createdAt);
+  return links;
 }
 
 /**
- * Deletes a download now: every link the owner has to that file (a re-download
- * with the same name reuses the file), and the file itself unless someone else
- * still links to it. Returns false for an unknown token or someone else's.
+ * Deletes a download now. The file goes; the row stays as history, marked
+ * expired. Returns false for an unknown token, someone else's, or one already gone.
  */
-export function deleteLink(token: string, owner: string) {
-  const registry = readRegistry();
-  const entry = registry[token];
-  if (!entry || entry.owner !== owner) return false;
+export async function deleteLink(token: string, owner: string) {
+  const now = new Date();
+  const [row] = await db()
+    .select()
+    .from(downloads)
+    .where(
+      and(
+        eq(downloads.token, token),
+        eq(downloads.userId, owner),
+        gt(downloads.expiresAt, now),
+      ),
+    );
+  if (!row) return false;
 
-  const file = path.basename(entry.file);
-  const kept: Registry = {};
-  let shared = false;
-  for (const [t, e] of Object.entries(registry)) {
-    if (path.basename(e.file) !== file) kept[t] = e;
-    else if (e.owner !== owner) {
-      kept[t] = e;
-      shared = true;
-    }
-  }
-  if (!shared) fs.rmSync(path.join(DOWNLOAD_DIR, file), { force: true });
-  writeRegistry(kept);
+  const file = path.basename(row.file);
+  fs.rmSync(path.join(DOWNLOAD_DIR, file), { force: true });
+  await db().update(downloads).set({ expiresAt: now }).where(eq(downloads.token, token));
   console.log(`> Deleted download: ${file}`);
   return true;
 }
 
-/** Deletes downloads and link entries after the configured retention period. */
-export function sweepExpired() {
+/**
+ * Deletes downloaded files older than the retention period. Their rows stay as history.
+ * It goes by file age and the current setting, so shortening the retention also
+ * removes files made under the longer one.
+ */
+export async function sweepExpired() {
   if (!fs.existsSync(DOWNLOAD_DIR)) return;
 
-  const cutoff = Date.now() - TTL_MS;
+  const cutoff = Date.now() - (await retentionMs());
 
   for (const name of fs.readdirSync(DOWNLOAD_DIR)) {
     if (name.startsWith(".")) continue;
@@ -132,17 +139,5 @@ export function sweepExpired() {
     } catch {
       // File vanished mid-sweep; nothing to do.
     }
-  }
-
-  const registry = readRegistry();
-  const kept: Registry = {};
-  for (const [token, entry] of Object.entries(registry)) {
-    const stillThere = fs.existsSync(
-      path.join(DOWNLOAD_DIR, path.basename(entry.file)),
-    );
-    if (entry.createdAt >= cutoff && stillThere) kept[token] = entry;
-  }
-  if (Object.keys(kept).length !== Object.keys(registry).length) {
-    writeRegistry(kept);
   }
 }

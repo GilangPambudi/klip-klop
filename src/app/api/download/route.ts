@@ -2,25 +2,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { downloadPart } from "@/lib/downloader";
 import { createLink, sweepExpired } from "@/lib/links";
 import { isAudioFormat } from "@/lib/formats";
-import { currentUserId } from "@/auth";
-import { creditsLeft, refundCredit, takeCredit } from "@/lib/credits";
+import { displayName } from "@/lib/filenames";
+import { getAccount, refundCredit, takeCredit } from "@/lib/db/accounts";
+import { currentAccount } from "@/auth";
 
 export async function POST(req: NextRequest) {
   try {
-    const owner = await currentUserId();
-    if (!owner) {
+    const account = await currentAccount();
+    if (!account) {
       return NextResponse.json(
         { error: "Log in to download" },
         { status: 401 },
       );
     }
+    if (account.banned) {
+      return NextResponse.json(
+        { error: "This account is banned" },
+        { status: 403 },
+      );
+    }
+    const owner = account.id;
 
-    sweepExpired();
+    await sweepExpired();
 
     const body = await req.json();
     const { url, start, end, filename, height, format } = body;
 
-    if (!url || !start || !end) {
+    if (
+      typeof url !== "string" || !url ||
+      typeof start !== "string" || !start ||
+      typeof end !== "string" || !end
+    ) {
       return NextResponse.json(
         { error: "Missing required fields: url, start, end" },
         { status: 400 },
@@ -34,7 +46,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!takeCredit(owner)) {
+    if (!(await takeCredit(owner))) {
       return NextResponse.json(
         { error: "No credits left", credits: 0 },
         { status: 402 },
@@ -49,24 +61,33 @@ export async function POST(req: NextRequest) {
         url,
         from: start,
         to: end,
-        filename,
+        owner,
+        filename: typeof filename === "string" ? filename : "",
         height: Number.isFinite(parsedHeight) && parsedHeight > 0
           ? parsedHeight
           : undefined,
         audio: isAudioFormat(format) ? format : undefined,
       });
-      token = createLink(file, owner);
+      token = await createLink({
+        file,
+        owner,
+        sourceUrl: url,
+        start: start.slice(0, 8),
+        end: end.slice(0, 8),
+        format: format ?? "mp4",
+      });
     } catch (error) {
       // Only a download that actually produced a file costs a credit.
-      refundCredit(owner);
+      await refundCredit(owner);
       throw error;
     }
 
     return NextResponse.json({
       success: true,
       file,
+      name: displayName(owner, file),
       downloadUrl: `/api/d/${token}`,
-      credits: creditsLeft(owner),
+      credits: (await getAccount(owner))?.credits ?? null,
     });
   } catch (error: unknown) {
     console.error("API Error:", error);

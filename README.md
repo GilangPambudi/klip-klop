@@ -54,13 +54,19 @@ If either command is not found, fix your `PATH` before starting Klip-Klop.
 
 ### Configuration
 
-Copy `.env.example` to `.env.local`, then change the retention period when needed:
+Copy `.env.example` to `.env` and fill it in. Klip-Klop needs a MySQL or MariaDB database (`DATABASE_URL`); create its tables with `npm run db:migrate`.
 
-```dotenv
-DOWNLOAD_RETENTION_HOURS=24
-```
+Site-wide settings live in the `config` table and take effect without a restart:
 
-The value is the number of hours before downloaded files and share links expire. It must be a positive number and defaults to `24` when omitted.
+| name | value | meaning |
+|---|---|---|
+| `default_height` | `720`, `1080`, ... or `max` | Resolution preselected for a new video: the best one at or below this |
+| `default_theme` | `mono-light`, `mono-dark`, `neon-light`, `neon-dark` | Theme for visitors who have not picked one |
+| `retention_hours` | a positive number | Hours before a finished download is deleted |
+
+A missing or invalid value falls back to `max`, `mono-light` and `24`.
+
+In the `users` table, set `unlimited` to `1` to stop charging an account credits, or `banned` to `1` to block its downloads.
 
 ### Setup
 

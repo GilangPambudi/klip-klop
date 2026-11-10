@@ -47,7 +47,10 @@ interface TimeState {
 
 interface ActiveLink {
   token: string;
+  /** Name on disk, used to play it back. */
   file: string;
+  /** Name to show. */
+  name: string;
   createdAt: number;
   expiresAt: number;
   size: number;
@@ -80,6 +83,8 @@ interface ControlsProps {
   isDownloading: boolean;
   /** Credits left; null when downloads are not charged (unlimited, signed out, local). */
   credits: number | null;
+  /** The signed-in account may not download. */
+  banned: boolean;
   videoId: string;
   downloadedFilename: string | null;
   onPreview: () => void;
@@ -121,6 +126,7 @@ export function Controls({
   isLocalhost,
   isDownloading,
   credits,
+  banned,
   videoId,
   downloadedFilename,
   onPreview,
@@ -149,8 +155,10 @@ export function Controls({
 
         {/* Desktop: both panels fill the card and scroll inside it. Mobile: the page scrolls. */}
         <TabsContent value="trim" className="min-h-0 lg:flex-1">
-          <ScrollArea className="h-full">
-            <div data-tab-content className="space-y-4 py-3 lg:space-y-5 lg:py-4">
+          {/* The scroll area bleeds into the card padding: 4px left so focus rings are not
+              clipped, and the full right padding so the scrollbar sits beside the fields, not on them. */}
+          <ScrollArea className="h-full -ml-1 -mr-3 lg:-mr-4">
+            <div data-tab-content className="space-y-4 py-3 pl-1 pr-3 lg:space-y-5 lg:py-4 lg:pr-4">
               <p className="text-muted-foreground text-xs">
                 Set Start/End to 00:00:00 to ignore/full download.
               </p>
@@ -357,10 +365,12 @@ export function Controls({
                 <Button
                   className="flex-1"
                   onClick={onDownload}
-                  disabled={isDownloading || !videoId || credits === 0}
+                  disabled={isDownloading || !videoId || banned || credits === 0}
                 >
                   {/* The balance sits where it gets spent; null = not charged, so nothing to show. */}
-                  {credits === 0 ? (
+                  {banned ? (
+                    "Account banned"
+                  ) : credits === 0 ? (
                     "No credits left"
                   ) : (
                     <>
@@ -389,8 +399,8 @@ export function Controls({
           value="recent"
           className="min-h-0 lg:flex-1"
         >
-          <ScrollArea className="h-full">
-            <div className="py-3 lg:py-4">
+          <ScrollArea className="h-full -ml-1 -mr-3 lg:-mr-4">
+            <div className="py-3 pl-1 pr-3 lg:py-4 lg:pr-4">
               {recentLinks.length === 0 ? (
                 <div data-tab-content className="text-muted-foreground flex flex-col items-center justify-center py-16 text-center">
                   <History className="mb-3 h-10 w-10 opacity-40" />
@@ -407,7 +417,7 @@ export function Controls({
                       className="space-y-1.5 rounded-base border-2 border-border p-3"
                     >
                       <p className="font-mono text-sm leading-snug break-all">
-                        {link.file}
+                        {link.name}
                       </p>
                       <p className="text-muted-foreground text-xs">
                         {formatSize(link.size)} &middot; expires in{" "}
@@ -458,7 +468,7 @@ export function Controls({
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete this download?</AlertDialogTitle>
                               <AlertDialogDescription className="wrap-anywhere">
-                                {link.file} will be removed from the server and its share link will stop working.
+                                {link.name} will be removed from the server and its share link will stop working.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

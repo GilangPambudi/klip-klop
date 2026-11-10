@@ -2,11 +2,15 @@ import path from "path";
 import fs from "fs";
 import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
 import type { AudioFormat } from "./formats";
+import { uniqueBase } from "./filenames";
 
 interface DownloadOptions {
   url: string;
   from: string; // "HH:mm:ss"
   to: string; // "HH:mm:ss"
+  /** Account the file belongs to; becomes the filename prefix. */
+  owner: string;
+  /** Name the user asked for, unsanitized. */
   filename: string;
   /** Max video height in pixels. Omit for best available. Ignored for audio. */
   height?: number;
@@ -26,34 +30,24 @@ const AUDIO_CODEC: Record<AudioFormat, string> = {
 
 export const DOWNLOAD_DIR = path.resolve(process.cwd(), "download");
 
-/**
- * YouTube titles reach the filename, so anything outside this set — path
- * separators, "..", control characters — must not survive.
- */
-export function sanitizeFilename(raw: string) {
-  const cleaned = raw
-    .trim()
-    .replace(/[^A-Za-z0-9_-]+/g, "_")
-    .replace(/_{2,}/g, "_")
-    .replace(/^[_-]+|[_-]+$/g, "");
-
-  // Filesystems cap a name at 255 bytes; leave room for the extension.
-  return cleaned.slice(0, 200) || "clip";
-}
-
 export async function downloadPart({
   url,
   from,
   to,
+  owner,
   filename,
   height,
   audio,
 }: DownloadOptions) {
-  const outputFilename = sanitizeFilename(filename || "clip");
-
   if (!fs.existsSync(DOWNLOAD_DIR)) {
     fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
   }
+
+  // Sanitized, prefixed with the owner, and numbered " (2)" when the name is taken,
+  // so one account never overwrites another's file or its own earlier one.
+  // ponytail: two same-name downloads starting in the same instant can still pick
+  // the same name; reserve it with a placeholder file if that ever happens.
+  const outputFilename = uniqueBase(owner, filename, fs.readdirSync(DOWNLOAD_DIR));
 
   const outputTemplate = path.join(DOWNLOAD_DIR, `${outputFilename}.%(ext)s`);
 

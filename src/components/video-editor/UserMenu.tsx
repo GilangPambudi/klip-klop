@@ -33,6 +33,7 @@ export interface SessionUser {
     provider: string;
     /** Credits left, or null for an account that is never charged. */
     credits: number | null;
+    banned: boolean;
 }
 
 function creditsLabel(credits: number | null) {
@@ -104,7 +105,7 @@ export function UserMenu({ user, credits }: { user: SessionUser; credits: number
                     </div>
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                         <dt className="text-muted-foreground">Credits</dt>
-                        <dd>{creditsLabel(credits)}</dd>
+                        <dd>{user.banned ? "Banned: this account cannot download" : creditsLabel(credits)}</dd>
                         <dt className="text-muted-foreground">Account ID</dt>
                         <dd className="font-mono break-all">{user.id}</dd>
                     </dl>

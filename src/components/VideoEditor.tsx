@@ -12,11 +12,13 @@ interface VideoEditorProps {
     user: SessionUser | null;
     /** Sign-in providers on offer; empty when sign-in is off (local launcher). */
     providers: string[];
+    /** Site setting: preselect the best resolution at or below this. null = the highest available. */
+    defaultHeight: number | null;
 }
 
-export default function VideoEditor({ user, providers }: VideoEditorProps) {
+export default function VideoEditor({ user, providers, defaultHeight }: VideoEditorProps) {
     const authEnabled = providers.length > 0;
-    const { state, setters, actions, contentRef } = useVideoEditor(authEnabled && !user, user?.credits ?? null);
+    const { state, setters, actions, contentRef } = useVideoEditor(authEnabled && !user, user?.credits ?? null, defaultHeight);
 
     return (
         <div className="flex flex-col gap-3 lg:h-full">
@@ -24,7 +26,7 @@ export default function VideoEditor({ user, providers }: VideoEditorProps) {
                 open={state.loginOpen}
                 onOpenChange={setters.setLoginOpen}
                 providers={providers}
-                onBeforeLogin={actions.saveDraft}
+                onBeforeRedirect={actions.saveDraft}
             />
             <Header
                 authEnabled={authEnabled}
@@ -70,6 +72,7 @@ export default function VideoEditor({ user, providers }: VideoEditorProps) {
                         isLocalhost={state.isLocalhost}
                         isDownloading={state.isDownloading}
                         credits={state.credits}
+                        banned={user?.banned ?? false}
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
                         onPreview={actions.handlePreview}

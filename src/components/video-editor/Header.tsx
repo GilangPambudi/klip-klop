@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlatformPicker } from "@/components/video-editor/PlatformPicker";
 import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { PlatformChoice } from "@/components/video-editor/useVideoEditor";
 
@@ -28,12 +28,6 @@ interface HeaderProps {
 const supportedNames = PLATFORMS.map((p) => p.label).join(", ");
 
 export function Header({ videoUrl, setVideoUrl, platformChoice, setPlatformChoice, detectedPlatform, linkUnsupported, onInputFocus, authEnabled, user, credits, onLogin }: HeaderProps) {
-    const choiceLabel =
-        platformChoice !== "auto"
-            ? platformLabel(platformChoice)
-            : detectedPlatform
-              ? `Auto · ${platformLabel(detectedPlatform)}`
-              : "Auto detect";
     const placeholder =
         platformChoice === "auto"
             ? `Paste a ${supportedNames.replace(/, ([^,]*)$/, ", or $1")} link`
@@ -54,19 +48,6 @@ export function Header({ videoUrl, setVideoUrl, platformChoice, setPlatformChoic
                 </div>
 
                 <div className="order-last flex w-full min-w-0 flex-wrap items-center gap-2 lg:order-none lg:w-auto lg:flex-1">
-                    <Select value={platformChoice} onValueChange={(v) => setPlatformChoice(v as PlatformChoice)}>
-                        <SelectTrigger className="w-36 flex-none" aria-label="Platform">
-                            <SelectValue>{choiceLabel}</SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="auto">Auto detect</SelectItem>
-                            {PLATFORMS.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                    {p.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
                     <div className="relative min-w-0 flex-1">
                         <Link className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -86,6 +67,7 @@ export function Header({ videoUrl, setVideoUrl, platformChoice, setPlatformChoic
                 </div>
 
                 <div className="flex items-center gap-2 flex-none">
+                    <PlatformPicker choice={platformChoice} onChoice={setPlatformChoice} detected={detectedPlatform} />
                     {/* With accounts on, the theme picker lives in the profile dialog. The local launcher has no profile, so it keeps the button. */}
                     {!authEnabled && <ModeToggle />}
                     {authEnabled && (user ? (

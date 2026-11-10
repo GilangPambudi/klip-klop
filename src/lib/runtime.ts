@@ -10,6 +10,21 @@ export const YTDLP_COMMON_ARGS = [
   "node",
 ];
 
+export function describeToolError(error: unknown, fallback: string) {
+  const text = error instanceof Error ? error.message : "";
+  const errors = [...text.matchAll(/ERROR:\s*(.+)/g)];
+  const line = errors.at(-1)?.[1];
+  if (!line) {
+    return text && !/^(Command failed|yt-dlp exited|ffmpeg exited)/.test(text)
+      ? text
+      : fallback;
+  }
+  if (/cookies|logged-in|login required|sign in/i.test(line)) {
+    return "This post needs a login on its platform, so it can't be loaded here.";
+  }
+  return line.replace(/^\[[^\]]+\]\s*[^:\s]+:\s*/, "").split(/(?<=\.)\s/)[0];
+}
+
 const INSTALL_HINTS: Record<string, string> = {
   "yt-dlp": "Install it and make sure `yt-dlp` is available on PATH.",
   ffmpeg: "Install it and make sure `ffmpeg` is available on PATH.",

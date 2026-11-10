@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
+import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
 import { probeWithPreview } from "@/lib/preview";
@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       url,
       "--no-playlist",
       "--no-warnings",
+      "--extractor-args",
+      "youtube:player_client=default,web_embedded",
       "-g",
       "-f",
       "best[ext=mp4][vcodec!=none][acodec!=none]/best",
@@ -75,8 +77,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("Info Error:", error);
-    const message =
-      error instanceof Error ? error.message : "Failed to read video info";
+    const message = describeToolError(error, "Failed to read video info");
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

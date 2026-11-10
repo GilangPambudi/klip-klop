@@ -3,6 +3,7 @@ import { downloadPart } from "@/lib/downloader";
 import { createLink, sweepExpired } from "@/lib/links";
 import { isAudioFormat } from "@/lib/formats";
 import { parseLink } from "@/lib/platforms";
+import { describeToolError } from "@/lib/runtime";
 import { displayName } from "@/lib/filenames";
 import { getAccount, refundCredit, takeCredit } from "@/lib/db/accounts";
 import { currentAccount } from "@/auth";
@@ -101,8 +102,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("API Error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Download failed";
+    const errorMessage = describeToolError(error, "Download failed");
 
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

@@ -4,14 +4,33 @@ import React from "react";
 import { Header } from "@/components/video-editor/Header";
 import { Content } from "@/components/video-editor/Content";
 import { Controls } from "@/components/video-editor/Controls";
+import { LoginDialog } from "@/components/video-editor/LoginDialog";
+import type { SessionUser } from "@/components/video-editor/UserMenu";
 import { useVideoEditor } from "@/components/video-editor/useVideoEditor";
 
-export default function VideoEditor() {
-    const { state, setters, actions, contentRef } = useVideoEditor();
+interface VideoEditorProps {
+    user: SessionUser | null;
+    /** Sign-in providers on offer; empty when sign-in is off (local launcher). */
+    providers: string[];
+}
+
+export default function VideoEditor({ user, providers }: VideoEditorProps) {
+    const authEnabled = providers.length > 0;
+    const { state, setters, actions, contentRef } = useVideoEditor(authEnabled && !user, user?.credits ?? null);
 
     return (
         <div className="flex flex-col gap-3 lg:h-full">
+            <LoginDialog
+                open={state.loginOpen}
+                onOpenChange={setters.setLoginOpen}
+                providers={providers}
+                onBeforeLogin={actions.saveDraft}
+            />
             <Header
+                authEnabled={authEnabled}
+                user={user}
+                credits={state.credits}
+                onLogin={() => setters.setLoginOpen(true)}
                 videoUrl={state.videoUrl}
                 setVideoUrl={setters.setVideoUrl}
                 isLocalhost={state.isLocalhost}
@@ -50,6 +69,7 @@ export default function VideoEditor() {
                         recentLinks={state.recentLinks}
                         isLocalhost={state.isLocalhost}
                         isDownloading={state.isDownloading}
+                        credits={state.credits}
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
                         onPreview={actions.handlePreview}

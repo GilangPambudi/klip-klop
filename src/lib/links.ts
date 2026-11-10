@@ -11,9 +11,13 @@ if (!Number.isFinite(TTL_MS) || TTL_MS <= 0) {
   throw new Error("DOWNLOAD_RETENTION_HOURS must be a positive number");
 }
 
+// ponytail: files are keyed by name only, so two users picking the same filename share
+// (and overwrite) one file. Put downloads in a per-owner folder if that ever bites.
 interface LinkEntry {
   file: string;
   createdAt: number;
+  /** Who made it. Entries from before sign-in existed have none and belong to nobody. */
+  owner?: string;
 }
 
 type Registry = Record<string, LinkEntry>;
@@ -31,10 +35,10 @@ function writeRegistry(registry: Registry) {
   fs.writeFileSync(REGISTRY_PATH, JSON.stringify(registry, null, 2), "utf8");
 }
 
-export function createLink(file: string) {
+export function createLink(file: string, owner: string) {
   const token = crypto.randomBytes(9).toString("base64url");
   const registry = readRegistry();
-  registry[token] = { file, createdAt: Date.now() };
+  registry[token] = { file, createdAt: Date.now(), owner };
   writeRegistry(registry);
   return token;
 }
@@ -59,13 +63,13 @@ export interface ActiveLink {
   size: number;
 }
 
-/** Links whose file still exists and whose retention window has not closed. */
-export function listLinks(): ActiveLink[] {
+/** The owner's links whose file still exists and whose retention window has not closed. */
+export function listLinks(owner: string): ActiveLink[] {
   const cutoff = Date.now() - TTL_MS;
   const links: ActiveLink[] = [];
 
   for (const [token, entry] of Object.entries(readRegistry())) {
-    if (entry.createdAt < cutoff) continue;
+    if (entry.owner !== owner || entry.createdAt < cutoff) continue;
 
     const filePath = path.join(DOWNLOAD_DIR, path.basename(entry.file));
     try {
@@ -85,21 +89,26 @@ export function listLinks(): ActiveLink[] {
 }
 
 /**
- * Deletes a download now: its file plus every link pointing at that file (a
- * re-download with the same name reuses the file). Returns false for an unknown token.
+ * Deletes a download now: every link the owner has to that file (a re-download
+ * with the same name reuses the file), and the file itself unless someone else
+ * still links to it. Returns false for an unknown token or someone else's.
  */
-export function deleteLink(token: string) {
+export function deleteLink(token: string, owner: string) {
   const registry = readRegistry();
   const entry = registry[token];
-  if (!entry) return false;
+  if (!entry || entry.owner !== owner) return false;
 
   const file = path.basename(entry.file);
-  fs.rmSync(path.join(DOWNLOAD_DIR, file), { force: true });
-
   const kept: Registry = {};
+  let shared = false;
   for (const [t, e] of Object.entries(registry)) {
     if (path.basename(e.file) !== file) kept[t] = e;
+    else if (e.owner !== owner) {
+      kept[t] = e;
+      shared = true;
+    }
   }
+  if (!shared) fs.rmSync(path.join(DOWNLOAD_DIR, file), { force: true });
   writeRegistry(kept);
   console.log(`> Deleted download: ${file}`);
   return true;

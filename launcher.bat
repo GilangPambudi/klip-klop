@@ -11,7 +11,7 @@ if not exist "node_modules\" (
 
 :: Start browser waiter in background
 echo Waiting for server to be ready...
-start /b powershell -nop -c "$i=0; while ($i -lt 60 -and !(Test-NetConnection -ComputerName localhost -Port 3000 -InformationLevel Quiet)) { Start-Sleep -Seconds 1; $i++ }; if ($i -lt 60) { Start-Process 'http://localhost:3000' }"
+start /b powershell -nop -c "$i=0; while ($i -lt 60 -and !(Test-NetConnection -ComputerName localhost -Port 4200 -InformationLevel Quiet)) { Start-Sleep -Seconds 1; $i++ }; if ($i -lt 60) { Start-Process 'http://localhost:4200' }"
 
 :: Run the dev server
 echo Starting development server...

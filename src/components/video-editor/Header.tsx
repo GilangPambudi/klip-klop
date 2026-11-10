@@ -1,5 +1,6 @@
 import React from "react";
-import { Link, Power } from "lucide-react";
+import { Link, LogIn, Power } from "lucide-react";
+import { UserMenu, type SessionUser } from "@/components/video-editor/UserMenu";
 import { Card, CardContent } from "@/components/ui/card";
 import {
     AlertDialog,
@@ -22,9 +23,15 @@ interface HeaderProps {
     isLocalhost: boolean;
     onInputFocus: (e: React.FocusEvent<HTMLInputElement>) => void;
     onStopServer: () => void;
+    /** False on the local launcher, where there is no sign-in at all. */
+    authEnabled: boolean;
+    user: SessionUser | null;
+    /** Live credit balance; null when the account is never charged. */
+    credits: number | null;
+    onLogin: () => void;
 }
 
-export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onStopServer }: HeaderProps) {
+export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onStopServer, authEnabled, user, credits, onLogin }: HeaderProps) {
     return (
         <Card className="flex-none p-1">
             {/* Mobile: logo + buttons on row 1, URL wraps to row 2. Desktop: one row. */}
@@ -52,6 +59,13 @@ export function Header({ videoUrl, setVideoUrl, isLocalhost, onInputFocus, onSto
 
                 <div className="flex items-center gap-2 flex-none">
                     <ModeToggle />
+                    {authEnabled && (user ? (
+                        <UserMenu user={user} credits={credits} />
+                    ) : (
+                        <Button variant="neutral" size="icon" title="Log in" aria-label="Log in" onClick={onLogin}>
+                            <LogIn className="h-5 w-5" />
+                        </Button>
+                    ))}
                     {isLocalhost && (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>

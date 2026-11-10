@@ -78,6 +78,8 @@ interface ControlsProps {
   recentLinks: ActiveLink[];
   isLocalhost: boolean;
   isDownloading: boolean;
+  /** Credits left; null when downloads are not charged (unlimited, signed out, local). */
+  credits: number | null;
   videoId: string;
   downloadedFilename: string | null;
   onPreview: () => void;
@@ -118,6 +120,7 @@ export function Controls({
   recentLinks,
   isLocalhost,
   isDownloading,
+  credits,
   videoId,
   downloadedFilename,
   onPreview,
@@ -354,10 +357,18 @@ export function Controls({
                 <Button
                   className="flex-1"
                   onClick={onDownload}
-                  disabled={isDownloading || !videoId}
+                  disabled={isDownloading || !videoId || credits === 0}
                 >
-                  {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
-                  Download
+                  {/* The balance sits where it gets spent; null = not charged, so nothing to show. */}
+                  {credits === 0 ? (
+                    "No credits left"
+                  ) : (
+                    <>
+                      {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+                      Download
+                      {credits !== null && <span className="opacity-70">· {credits} left</span>}
+                    </>
+                  )}
                 </Button>
 
                 {isLocalhost && (

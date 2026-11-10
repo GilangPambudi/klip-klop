@@ -10,7 +10,15 @@ export interface ActiveLink {
   size: number;
 }
 
-export function useVideoEditor() {
+// Clip settings parked here while the visitor is away at the sign-in provider.
+const DRAFT_KEY = "klip-klop-draft";
+
+export function useVideoEditor(
+  needsLogin: boolean,
+  initialCredits: number | null,
+) {
+  // null = an account that is never charged (or sign-in is off).
+  const [credits, setCredits] = useState(initialCredits);
   const [videoUrl, setVideoUrl] = useState("");
   const [videoId, setVideoId] = useState("");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -47,6 +55,52 @@ export function useVideoEditor() {
   const playerRef = useRef<HTMLVideoElement | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  // Resolution to re-select once the restored video has been probed again.
+  const pendingHeightRef = useRef<string | null>(null);
+
+  const [loginOpen, setLoginOpen] = useState(false);
+
+  const saveDraft = () => {
+    try {
+      sessionStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          videoUrl,
+          start: [startH, startM, startS],
+          end: [endH, endM, endS],
+          customFilename,
+          selectedHeight,
+          format,
+        }),
+      );
+    } catch {
+      // Storage blocked: the visitor just sets the clip up again after signing in.
+    }
+  };
+
+  // Back from signing in: put the clip settings back where they were.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      sessionStorage.removeItem(DRAFT_KEY);
+      const draft = JSON.parse(raw);
+
+      pendingHeightRef.current = draft.selectedHeight || null;
+      handleUrlChange(draft.videoUrl);
+      setStartH(draft.start[0]);
+      setStartM(draft.start[1]);
+      setStartS(draft.start[2]);
+      setEndH(draft.end[0]);
+      setEndM(draft.end[1]);
+      setEndS(draft.end[2]);
+      setCustomFilename(draft.customFilename);
+      setFormat(draft.format);
+    } catch {
+      // Unreadable draft; start clean.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount only
+  }, []);
 
   const refreshLinks = () =>
     fetch("/api/links")
@@ -117,6 +171,8 @@ export function useVideoEditor() {
   // One round-trip: validates the URL, reads video info, and resolves the
   // preview stream URL. Runs when a (new) URL is pasted.
   const probeVideo = async (url: string) => {
+    const restoredHeight = pendingHeightRef.current;
+    pendingHeightRef.current = null;
     setIsProbing(true);
     setPreviewUrl("");
     setHeights([]);
@@ -132,7 +188,8 @@ export function useVideoEditor() {
       setTitle(data.title || "");
       setHeights(data.heights || []);
       setSelectedHeight(
-        data.heights?.length ? String(data.heights[0]) : "best",
+        restoredHeight ??
+          (data.heights?.length ? String(data.heights[0]) : "best"),
       );
       setPreviewUrl(data.directUrl || "");
       // Only announce success once info + preview are actually ready.
@@ -238,6 +295,13 @@ export function useVideoEditor() {
       return;
     }
 
+    // Cutting and previewing are open to everyone; the download itself is not.
+    // The server enforces this too (401 from /api/download).
+    if (needsLogin) {
+      setLoginOpen(true);
+      return;
+    }
+
     setIsDownloading(true);
     setDownloadUrl(null);
     const finalFilename = filename.trim() || `clip-${Date.now()}`;
@@ -257,6 +321,8 @@ export function useVideoEditor() {
       }),
     }).then(async (res) => {
       const data = await res.json();
+      // The server reports the balance on success and when it has run out.
+      if (typeof data.credits === "number") setCredits(data.credits);
       if (!res.ok) throw new Error(data.error || "Failed");
       return data;
     });
@@ -268,7 +334,9 @@ export function useVideoEditor() {
         if (data.file) setDownloadedFilename(data.file);
         if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
         refreshLinks();
-        return `Download complete: ${data.file}`;
+        return typeof data.credits === "number"
+          ? `Download complete: ${data.file} (${data.credits} ${data.credits === 1 ? "credit" : "credits"} left)`
+          : `Download complete: ${data.file}`;
       },
       error: (err) => {
         setIsDownloading(false);
@@ -358,6 +426,8 @@ export function useVideoEditor() {
       downloadUrl,
       recentLinks,
       isLocalhost,
+      loginOpen,
+      credits,
       time: {
         start: { h: startH, m: startM, s: startS },
         end: { h: endH, m: endM, s: endS },
@@ -373,6 +443,7 @@ export function useVideoEditor() {
       setFilename: handleFilenameChange,
       setSelectedHeight,
       setFormat,
+      setLoginOpen,
       setStartH,
       setStartM,
       setStartS,
@@ -383,6 +454,7 @@ export function useVideoEditor() {
     actions: {
       handleStopServer,
       handleDownload,
+      saveDraft,
       handlePreview,
       handlePreviewFile,
       handleDeleteFile,

@@ -78,7 +78,7 @@ The value is the number of hours before downloaded files and share links expire.
    pnpm dev
    ```
 
-5. Open `http://localhost:3000`.
+5. Open `http://localhost:4200`.
 
 ### Windows Launcher
 

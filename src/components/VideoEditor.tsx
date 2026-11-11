@@ -5,6 +5,7 @@ import { Header } from "@/components/video-editor/Header";
 import { Content } from "@/components/video-editor/Content";
 import { Controls } from "@/components/video-editor/Controls";
 import { LoginDialog } from "@/components/video-editor/LoginDialog";
+import { ErrorDialog } from "@/components/video-editor/ErrorDialog";
 import type { SessionUser } from "@/components/video-editor/UserMenu";
 import { useVideoEditor } from "@/components/video-editor/useVideoEditor";
 
@@ -28,6 +29,7 @@ export default function VideoEditor({ user, providers, defaultHeight }: VideoEdi
                 providers={providers}
                 onBeforeRedirect={actions.saveDraft}
             />
+            <ErrorDialog failure={state.failure} onClose={() => setters.setFailure(null)} />
             <Header
                 authEnabled={authEnabled}
                 user={user}

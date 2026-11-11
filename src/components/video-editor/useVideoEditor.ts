@@ -5,6 +5,7 @@ import { AUTH_CHANNEL } from "@/lib/utils";
 import { formatClock, linkStartSeconds } from "@/lib/youtube";
 import { isAudioFormat, type MediaFormat } from "@/lib/formats";
 import { parseLink, type PlatformId } from "@/lib/platforms";
+import type { Failure } from "@/components/video-editor/ErrorDialog";
 
 export type PlatformChoice = "auto" | PlatformId;
 
@@ -73,6 +74,7 @@ export function useVideoEditor(
   const pendingHeightRef = useRef<string | null>(null);
 
   const [loginOpen, setLoginOpen] = useState(false);
+  const [failure, setFailure] = useState<Failure | null>(null);
 
   const saveDraft = () => {
     try {
@@ -283,7 +285,7 @@ export function useVideoEditor(
       toast.success("Video loaded!");
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Probe failed";
-      toast.error(`Could not load video: ${message}`);
+      setFailure({ title: "Could not load video", message });
       setSelectedHeight("best");
     } finally {
       setIsProbing(false);
@@ -418,22 +420,27 @@ export function useVideoEditor(
       return data;
     });
 
-    toast.promise(promise, {
-      loading: "Downloading...",
-      success: (data) => {
-        setIsDownloading(false);
-        if (data.file) setDownloadedFilename(data.file);
-        if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
-        refreshLinks();
-        return typeof data.credits === "number"
+    const toastId = toast.loading("Downloading...");
+    try {
+      const data = await promise;
+      if (data.file) setDownloadedFilename(data.file);
+      if (data.downloadUrl) setDownloadUrl(data.downloadUrl);
+      refreshLinks();
+      toast.success(
+        typeof data.credits === "number"
           ? `Download complete: ${data.name} (${data.credits} ${data.credits === 1 ? "credit" : "credits"} left)`
-          : `Download complete: ${data.name}`;
-      },
-      error: (err) => {
-        setIsDownloading(false);
-        return `Error: ${err.message}`;
-      },
-    });
+          : `Download complete: ${data.name}`,
+        { id: toastId },
+      );
+    } catch (err: unknown) {
+      toast.dismiss(toastId);
+      setFailure({
+        title: "Download failed",
+        message: err instanceof Error ? err.message : "Download failed",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handlePreview = () => {
@@ -499,6 +506,7 @@ export function useVideoEditor(
       recentLinks,
       isLocalhost,
       loginOpen,
+      failure,
       credits,
       time: {
         start: { h: startH, m: startM, s: startS },
@@ -517,6 +525,7 @@ export function useVideoEditor(
       setSelectedHeight,
       setFormat,
       setLoginOpen,
+      setFailure,
       setStartH,
       setStartM,
       setStartS,

@@ -22,6 +22,9 @@ export function describeToolError(error: unknown, fallback: string) {
   if (/cookies|logged-in|login required|sign in/i.test(line)) {
     return "This post needs a login on its platform, so it can't be loaded here.";
   }
+  if (/HTTP Error 403|ffmpeg exited with code 8/i.test(line)) {
+    return "The platform refused to send this video to our server. Try again later.";
+  }
   return line.replace(/^\[[^\]]+\]\s*[^:\s]+:\s*/, "").split(/(?<=\.)\s/)[0];
 }
 

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       "youtube:player_client=default,web_embedded",
       "-g",
       "-f",
-      "best[ext=mp4][vcodec!=none][acodec!=none]/best",
+      "best[ext=mp4][vcodec!=none][acodec!=none][protocol=https]/best",
       "--print",
       "%(title)s",
       "--print",

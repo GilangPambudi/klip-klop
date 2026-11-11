@@ -4,6 +4,7 @@ import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
 import type { AudioFormat } from "./formats";
 import { uniqueBase } from "./filenames";
 import { cookieArgs } from "./cookies";
+import { withProxies } from "./proxies";
 
 interface DownloadOptions {
   url: string;
@@ -116,7 +117,9 @@ export async function downloadPart({
 
   console.log(`> Downloading: ${url} [${from} - ${to}] @ ${audio ?? height ?? "best"}`);
 
-  const { stdout } = await streamTool("yt-dlp", args);
+  const { stdout } = await withProxies(url, (proxyArgs) =>
+    streamTool("yt-dlp", [...args, ...proxyArgs]),
+  );
 
   // Progress output shares stdout with --print, so match the path itself
   // rather than assuming which line it lands on.

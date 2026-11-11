@@ -4,6 +4,7 @@ import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
 import { probeWithPreview } from "@/lib/preview";
+import { withProxies } from "@/lib/proxies";
 
 export async function POST(req: NextRequest) {
   try {
@@ -29,10 +30,12 @@ export async function POST(req: NextRequest) {
 
     // One yt-dlp call fetches info AND the preview stream URL. -g prints the
     // resolved URL on its own line after the --print output.
-    const { stdout } = await runTool("yt-dlp", [
+    const cookies = await cookieArgs(url);
+    const { stdout } = await withProxies(url, (proxyArgs) => runTool("yt-dlp", [
       ...YTDLP_COMMON_ARGS,
       url,
-      ...(await cookieArgs(url)),
+      ...cookies,
+      ...proxyArgs,
       "--no-playlist",
       "--no-warnings",
       "--extractor-args",
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
       "%(duration)s",
       "--print",
       "%(formats.:.height)j",
-    ]);
+    ]));
 
     const lines = stdout.split(/[\r\n]+/).filter(Boolean);
     const [title, durationRaw, heightsRaw, ...streamLines] = lines;

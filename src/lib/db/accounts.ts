@@ -33,12 +33,17 @@ export interface Account {
   /** Credits left, or null when the account is never charged. */
   credits: number | null;
   banned: boolean;
+  admin: boolean;
 }
 
 export async function getAccount(id: string): Promise<Account | null> {
   const [user] = await db().select().from(users).where(eq(users.id, id));
   if (!user) return null;
-  return { credits: user.unlimited ? null : user.credits, banned: user.banned };
+  return {
+    credits: user.unlimited ? null : user.credits,
+    banned: user.banned,
+    admin: user.admin,
+  };
 }
 
 /**

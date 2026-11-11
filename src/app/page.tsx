@@ -15,6 +15,7 @@ export default async function Home() {
           provider: account.id.split(":")[0],
           credits: account.credits,
           banned: account.banned,
+          admin: account.admin,
         }
       : null;
 

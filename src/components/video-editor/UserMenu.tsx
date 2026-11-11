@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { LogOut, User } from "lucide-react";
+import Link from "next/link";
+import { LogOut, Settings, User } from "lucide-react";
 import {
     AlertDialog,
     AlertDialogCancel,
@@ -35,6 +36,7 @@ export interface SessionUser {
     /** Credits left, or null for an account that is never charged. */
     credits: number | null;
     banned: boolean;
+    admin: boolean;
 }
 
 function creditsLabel(credits: number | null) {
@@ -81,6 +83,13 @@ export function UserMenu({ user, credits }: { user: SessionUser; credits: number
                     <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
                         <User /> Profile
                     </DropdownMenuItem>
+                    {user.admin && (
+                        <DropdownMenuItem asChild>
+                            <Link href="/config">
+                                <Settings /> Config
+                            </Link>
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onSelect={() => void logoutAction()}>
                         <LogOut /> Log out
                     </DropdownMenuItem>

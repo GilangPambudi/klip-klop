@@ -21,6 +21,7 @@ export const users = mysqlTable("users", {
   unlimited: boolean("unlimited").notNull().default(false),
   /** Cannot download. Flip it by hand in the database. */
   banned: boolean("banned").notNull().default(false),
+  admin: boolean("admin").notNull().default(false),
   createdAt: datetime("created_at").notNull(),
   lastLoginAt: datetime("last_login_at").notNull(),
 });
@@ -29,6 +30,15 @@ export const users = mysqlTable("users", {
 export const config = mysqlTable("config", {
   name: varchar("name", { length: 40 }).primaryKey(),
   value: varchar("value", { length: 255 }).notNull(),
+});
+
+export const proxies = mysqlTable("proxies", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 60 }).notNull(),
+  url: varchar("url", { length: 255 }).notNull(),
+  position: int("position").notNull().default(0),
+  enabled: boolean("enabled").notNull().default(true),
+  platforms: varchar("platforms", { length: 60 }).notNull().default("youtube"),
 });
 
 // Rows are kept after the file is gone, so this doubles as the download history.

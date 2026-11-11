@@ -86,3 +86,9 @@ export async function currentAccount() {
   }
   return account && { id: user.id, ...account };
 }
+
+export async function currentAdmin() {
+  const account = await currentAccount();
+  if (!account) return null;
+  return !authEnabled || account.admin ? account : null;
+}

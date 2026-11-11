@@ -94,12 +94,19 @@ On Windows, `launcher.bat` does steps 2, 5 and 6 for you. The database and `.env
 | `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET` | Discord OAuth2 application. Redirect URL: `<AUTH_URL>/api/auth/callback/discord`. |
 | `AUTH_GOOGLE_ENABLED` | `true` to offer Google sign-in as well. Off by default. |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client. Redirect URL: `<AUTH_URL>/api/auth/callback/google`. |
+| `YT_DLP_COOKIES` | Path to a Netscape cookie file for YouTube, for a server that gets "Sign in to confirm you're not a bot". Optional. |
 
 If `AUTH_SECRET` is left empty, sign-in is switched off completely: anyone who can reach the app can download, without credits. That suits a private machine only. Always set it on a public server.
 
+#### Admin page (`/config`)
+
+Accounts with `admin` set to `1` get a Config entry in the avatar menu. It edits the site settings below and the proxy list. With sign-in off, the page is open on the local machine.
+
+Proxies are tried top to bottom for the platforms each one is set for. When one fails with a block or connection error, the next takes over; with none switched on, the server goes direct. Use HTTP proxies: ffmpeg cuts clips over HTTP only, so a SOCKS proxy works for full downloads alone. The Test button reports the exit IP and cuts two seconds of a YouTube video through the proxy.
+
 #### Site settings (`config` table)
 
-These take effect without a restart:
+Editable on `/config` or by hand. These take effect without a restart:
 
 | name | value | meaning |
 |---|---|---|
@@ -117,6 +124,7 @@ An account is created the first time someone logs in.
 - `credits`: downloads left. Starts at 3 and never refills; edit the number to top an account up.
 - `unlimited`: set to `1` to stop charging the account.
 - `banned`: set to `1` to block its downloads.
+- `admin`: set to `1` to open `/config` for the account.
 
 ### After an update
 

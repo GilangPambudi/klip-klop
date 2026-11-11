@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { cookieArgs } from "./cookies";
 import { DOWNLOAD_DIR } from "./downloader";
+import { withProxies } from "./proxies";
 import { resolveBinary, runTool, YTDLP_COMMON_ARGS } from "./runtime";
 
 const PREVIEW_DIR = path.join(DOWNLOAD_DIR, ".preview");
@@ -31,9 +32,11 @@ export async function probeWithPreview(url: string) {
 
   const token = crypto.randomBytes(16).toString("hex");
 
-  const { stdout } = await runTool("yt-dlp", [
+  const cookies = await cookieArgs(url);
+  const { stdout } = await withProxies(url, (proxyArgs) => runTool("yt-dlp", [
     ...YTDLP_COMMON_ARGS,
-    ...(await cookieArgs(url)),
+    ...cookies,
+    ...proxyArgs,
     url,
     "--no-playlist",
     "--no-warnings",
@@ -54,7 +57,7 @@ export async function probeWithPreview(url: string) {
     "%(.{title,duration})j",
     "--print",
     "%(formats.:.height)j",
-  ]);
+  ]));
 
   const [infoRaw, heightsRaw] = stdout.split(/[\r\n]+/).filter(Boolean);
   const info = JSON.parse(infoRaw ?? "{}") as {

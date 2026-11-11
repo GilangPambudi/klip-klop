@@ -24,7 +24,12 @@ async function instagramSessionId() {
 }
 
 export async function cookieArgs(url: string): Promise<string[]> {
-  if (parseLink(url)?.platform !== "instagram") return [];
+  const platform = parseLink(url)?.platform;
+  if (platform === "youtube") {
+    const file = process.env.YT_DLP_COOKIES?.trim();
+    return file && fs.existsSync(file) ? ["--cookies", file] : [];
+  }
+  if (platform !== "instagram") return [];
 
   const sessionId = await instagramSessionId();
   if (!sessionId) return [];

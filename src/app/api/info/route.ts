@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { cookieArgs } from "@/lib/cookies";
 import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
@@ -31,6 +32,7 @@ export async function POST(req: NextRequest) {
     const { stdout } = await runTool("yt-dlp", [
       ...YTDLP_COMMON_ARGS,
       url,
+      ...(await cookieArgs(url)),
       "--no-playlist",
       "--no-warnings",
       "--extractor-args",

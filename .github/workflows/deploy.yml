@@ -1,0 +1,12 @@
+name: Deploy
+on:
+  push:
+    branches: [master]
+
+concurrency: deploy
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    steps:
+      - run: /usr/local/bin/deploy klip-klop

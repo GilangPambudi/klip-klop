@@ -4,7 +4,7 @@ cd "$(dirname "$0")/.."
 
 started=$(date +%s)
 old_head=$(git rev-parse HEAD)
-git pull --ff-only -q
+if [ -n "${DEPLOY_REF:-}" ]; then git reset --hard -q "$DEPLOY_REF"; else git pull --ff-only -q; fi
 new_head=$(git rev-parse HEAD)
 echo "Commit: $(git log --oneline -1)"
 

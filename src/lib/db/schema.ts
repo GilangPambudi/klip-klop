@@ -17,9 +17,9 @@ export const users = mysqlTable("users", {
   name: varchar("name", { length: 100 }).notNull(),
   image: varchar("image", { length: 512 }),
   credits: int("credits").notNull().default(STARTING_CREDITS),
-  /** Never charged. Flip it by hand in the database. */
+  /** Never charged. */
   unlimited: boolean("unlimited").notNull().default(false),
-  /** Cannot download. Flip it by hand in the database. */
+  /** Cannot download. */
   banned: boolean("banned").notNull().default(false),
   admin: boolean("admin").notNull().default(false),
   createdAt: datetime("created_at").notNull(),

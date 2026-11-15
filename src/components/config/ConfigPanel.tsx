@@ -24,6 +24,7 @@ import {
 import { ErrorDialog, type Failure } from "@/components/video-editor/ErrorDialog";
 import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { Settings } from "@/lib/db/settings";
+import { UsersTab, type UserRow } from "@/components/config/UsersTab";
 import { cn } from "@/lib/utils";
 
 export interface ProxyRow {
@@ -66,13 +67,21 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
 const platformList = (value: string) =>
     value.split(",").filter((p): p is PlatformId => PLATFORMS.some((x) => x.id === p));
 
-export function ConfigPanel({ initialSettings, initialProxies }: { initialSettings: Settings; initialProxies: ProxyRow[] }) {
+interface ConfigPanelProps {
+    initialSettings: Settings;
+    initialProxies: ProxyRow[];
+    initialUsers: UserRow[];
+    selfId: string;
+}
+
+export function ConfigPanel({ initialSettings, initialProxies, initialUsers, selfId }: ConfigPanelProps) {
     const [settings, setSettings] = useState<Settings>({
         ...initialSettings,
         default_height: initialSettings.default_height || "max",
         default_theme: initialSettings.default_theme || "mono",
         retention_hours: initialSettings.retention_hours || "24",
     });
+    const [userCount, setUserCount] = useState(initialUsers.length);
     const [showSession, setShowSession] = useState(false);
     const [saving, setSaving] = useState(false);
     const [proxies, setProxies] = useState(initialProxies);
@@ -170,9 +179,10 @@ export function ConfigPanel({ initialSettings, initialProxies }: { initialSettin
 
             <Card className="p-3 lg:p-4">
                 <Tabs defaultValue="settings">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="settings">Settings</TabsTrigger>
                         <TabsTrigger value="proxies">Proxies ({proxies.length})</TabsTrigger>
+                        <TabsTrigger value="users">Users ({userCount})</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="settings" className="flex flex-col gap-4 pt-2">
@@ -218,6 +228,18 @@ export function ConfigPanel({ initialSettings, initialProxies }: { initialSettin
                                         {showSession ? <EyeOff /> : <Eye />}
                                     </Button>
                                 </div>
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="retries" className="text-muted-foreground text-xs sm:text-sm">Preview load retries (0 to 10)</Label>
+                                <Input id="retries" inputMode="numeric" value={settings.preview_retries} onChange={(e) => set("preview_retries")(e.target.value)} />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="credits" className="text-muted-foreground text-xs sm:text-sm">Credits for new accounts</Label>
+                                <Input id="credits" inputMode="numeric" value={settings.starting_credits} onChange={(e) => set("starting_credits")(e.target.value)} />
+                            </div>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="previewmax" className="text-muted-foreground text-xs sm:text-sm">Max preview size, TikTok and Instagram (MB)</Label>
+                                <Input id="previewmax" inputMode="numeric" value={settings.preview_max_mb} onChange={(e) => set("preview_max_mb")(e.target.value)} />
                             </div>
                         </div>
                         <div className="flex justify-end">
@@ -290,6 +312,15 @@ export function ConfigPanel({ initialSettings, initialProxies }: { initialSettin
                                 <Plus /> Add proxy
                             </Button>
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="users" className="flex flex-col gap-3 pt-2">
+                        <UsersTab
+                            initialUsers={initialUsers}
+                            selfId={selfId}
+                            onCount={setUserCount}
+                            onFail={(title, err) => fail(title)(err)}
+                        />
                     </TabsContent>
                 </Tabs>
             </Card>

@@ -1,4 +1,5 @@
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { getConfig } from "./config.ts";
 import { db } from "./index.ts";
 import { users } from "./schema.ts";
 
@@ -14,6 +15,7 @@ interface Profile {
 /** Creates the account on first sight; afterwards refreshes name, picture and last login. */
 export async function touchUser({ id, provider, name, image, unlimited }: Profile) {
   const now = new Date();
+  const { startingCredits } = await getConfig();
   await db()
     .insert(users)
     .values({
@@ -21,6 +23,7 @@ export async function touchUser({ id, provider, name, image, unlimited }: Profil
       provider,
       name,
       image,
+      credits: startingCredits,
       unlimited: unlimited ?? false,
       createdAt: now,
       lastLoginAt: now,
@@ -62,6 +65,24 @@ export async function takeCredit(id: string) {
     .set({ credits: sql`${users.credits} - 1` })
     .where(and(eq(users.id, id), gt(users.credits, 0)));
   return result.affectedRows === 1;
+}
+
+export type UserRow = typeof users.$inferSelect;
+
+export interface UserChanges {
+  credits?: number;
+  unlimited?: boolean;
+  banned?: boolean;
+  admin?: boolean;
+}
+
+export async function listUsers(): Promise<UserRow[]> {
+  return db().select().from(users).orderBy(desc(users.lastLoginAt));
+}
+
+export async function updateUser(id: string, changes: UserChanges) {
+  if (Object.keys(changes).length === 0) return;
+  await db().update(users).set(changes).where(eq(users.id, id));
 }
 
 /** Gives the credit back when the download it paid for failed. */

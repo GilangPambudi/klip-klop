@@ -16,7 +16,6 @@ interface Gate {
   account: Account | null;
   config: SiteConfig;
   ip: string;
-  /** Set when the request must stop here. */
   denied: NextResponse | null;
 }
 

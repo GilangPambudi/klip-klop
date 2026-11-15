@@ -160,6 +160,7 @@ Loads by signed-out and limited accounts stop after 3 minutes, and a load stops 
 An account is created the first time someone logs in.
 
 - `credits`: downloads left. Starts at 3 and never refills; edit the number to top an account up.
+- `credits_held`: set on a Discord account younger than `min_account_age_days` (90 by default, `0` turns it off, read from the account ID). It starts with 0 credits, and its starting credits are added on the first login after it is old enough. Editing its credits on `/config` clears the hold.
 - `unlimited`: set to `1` to stop charging the account.
 - `banned`: set to `1` to block its downloads.
 - `admin`: set to `1` to open `/config` for the account.

@@ -18,7 +18,6 @@ interface DownloadOptions {
   height?: number;
   /** Extract audio only in this format. Omit for an MP4 video. */
   audio?: AudioFormat;
-  /** yt-dlp --match-filter; a video that fails it is refused with FILTERED_OUT. */
   matchFilter?: string;
   maxMb?: number;
   run?: RunOptions;

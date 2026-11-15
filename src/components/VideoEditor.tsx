@@ -79,6 +79,7 @@ export default function VideoEditor({ user, providers, defaultHeight, previewRet
                         isDownloading={state.isDownloading}
                         credits={state.credits}
                         banned={user?.banned ?? false}
+                        heldUntil={user?.heldUntil ?? null}
                         videoId={state.videoId}
                         downloadedFilename={state.downloadedFilename}
                         onPreview={actions.handlePreview}

@@ -15,6 +15,7 @@ export interface UserRow {
     unlimited: boolean;
     banned: boolean;
     admin: boolean;
+    held: boolean;
     lastLoginAt: string;
     lastIp: string | null;
 }
@@ -119,6 +120,7 @@ export function UsersTab({ initialUsers, selfId, onCount, onFail }: UsersTabProp
                             <div className="text-xs text-muted-foreground">
                                 Last login {lastSeen(user.lastLoginAt)}
                                 {user.lastIp && <span className="break-all"> from {user.lastIp}</span>}
+                                {user.held && <span> · young Discord account, starting credits held</span>}
                             </div>
                             <div className="flex flex-wrap items-center gap-2 pt-1">
                                 <div className="flex items-center gap-2">

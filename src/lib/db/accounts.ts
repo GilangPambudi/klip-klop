@@ -1,4 +1,5 @@
 import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { unlocksAt } from "../account-age.ts";
 import { getConfig } from "./config.ts";
 import { db } from "./index.ts";
 import { users } from "./schema.ts";
@@ -12,10 +13,29 @@ interface Profile {
   unlimited?: boolean;
 }
 
+async function holdCredits(id: string) {
+  try {
+    await db().update(users).set({ credits: 0, creditsHeld: true }).where(eq(users.id, id));
+  } catch (error) {
+    console.error("Could not hold credits (is migration 0005 applied?):", error);
+  }
+}
+
+async function releaseCredits(id: string, credits: number) {
+  try {
+    await db()
+      .update(users)
+      .set({ credits: sql`${users.credits} + ${credits}`, creditsHeld: false })
+      .where(and(eq(users.id, id), eq(users.creditsHeld, true)));
+  } catch (error) {
+    console.error("Could not release held credits:", error);
+  }
+}
+
 /** Creates the account on first sight; afterwards refreshes name, picture and last login. */
 export async function touchUser({ id, provider, name, image, unlimited }: Profile) {
   const now = new Date();
-  const { startingCredits } = await getConfig();
+  const { startingCredits, minAccountAgeDays } = await getConfig();
   const [result] = await db()
     .insert(users)
     .values({
@@ -30,7 +50,12 @@ export async function touchUser({ id, provider, name, image, unlimited }: Profil
     })
     // Credits, unlimited and banned are deliberately left alone on later logins.
     .onDuplicateKeyUpdate({ set: { name, image, lastLoginAt: now } });
-  return result.affectedRows === 1;
+  const created = result.affectedRows === 1;
+
+  const young = unlocksAt(id, minAccountAgeDays) !== null;
+  if (created && young) await holdCredits(id);
+  if (!created && !young) await releaseCredits(id, startingCredits);
+  return created;
 }
 
 export interface Account {
@@ -38,15 +63,37 @@ export interface Account {
   credits: number | null;
   banned: boolean;
   admin: boolean;
+  held: boolean;
+}
+
+async function isHeld(id: string) {
+  try {
+    const [row] = await db()
+      .select({ held: users.creditsHeld })
+      .from(users)
+      .where(eq(users.id, id));
+    return row?.held ?? false;
+  } catch {
+    return false;
+  }
 }
 
 export async function getAccount(id: string): Promise<Account | null> {
-  const [user] = await db().select().from(users).where(eq(users.id, id));
+  const [user] = await db()
+    .select({
+      credits: users.credits,
+      unlimited: users.unlimited,
+      banned: users.banned,
+      admin: users.admin,
+    })
+    .from(users)
+    .where(eq(users.id, id));
   if (!user) return null;
   return {
     credits: user.unlimited ? null : user.credits,
     banned: user.banned,
     admin: user.admin,
+    held: !user.unlimited && user.credits === 0 && (await isHeld(id)),
   };
 }
 
@@ -68,7 +115,18 @@ export async function takeCredit(id: string) {
   return result.affectedRows === 1;
 }
 
-export type UserRow = typeof users.$inferSelect;
+const listColumns = {
+  id: users.id,
+  provider: users.provider,
+  name: users.name,
+  image: users.image,
+  credits: users.credits,
+  unlimited: users.unlimited,
+  banned: users.banned,
+  admin: users.admin,
+  createdAt: users.createdAt,
+  lastLoginAt: users.lastLoginAt,
+};
 
 export interface UserChanges {
   credits?: number;
@@ -77,13 +135,27 @@ export interface UserChanges {
   admin?: boolean;
 }
 
-export async function listUsers(): Promise<UserRow[]> {
-  return db().select().from(users).orderBy(desc(users.lastLoginAt));
+export async function listUsers() {
+  return db().select(listColumns).from(users).orderBy(desc(users.lastLoginAt));
+}
+
+export async function heldUserIds(): Promise<Set<string>> {
+  try {
+    const rows = await db().select({ id: users.id }).from(users).where(eq(users.creditsHeld, true));
+    return new Set(rows.map((r) => r.id));
+  } catch {
+    return new Set();
+  }
 }
 
 export async function updateUser(id: string, changes: UserChanges) {
   if (Object.keys(changes).length === 0) return;
   await db().update(users).set(changes).where(eq(users.id, id));
+  if (changes.credits !== undefined) {
+    try {
+      await db().update(users).set({ creditsHeld: false }).where(eq(users.id, id));
+    } catch {}
+  }
 }
 
 /** Gives the credit back when the download it paid for failed. */

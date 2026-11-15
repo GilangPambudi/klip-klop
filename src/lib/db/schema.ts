@@ -23,6 +23,7 @@ export const users = mysqlTable("users", {
   /** Cannot download. */
   banned: boolean("banned").notNull().default(false),
   admin: boolean("admin").notNull().default(false),
+  creditsHeld: boolean("credits_held").notNull().default(false),
   createdAt: datetime("created_at").notNull(),
   lastLoginAt: datetime("last_login_at").notNull(),
 });

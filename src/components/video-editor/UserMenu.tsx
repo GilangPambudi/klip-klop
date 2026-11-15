@@ -37,6 +37,12 @@ export interface SessionUser {
     credits: number | null;
     banned: boolean;
     admin: boolean;
+    heldUntil: string | null;
+}
+
+export function heldLabel(heldUntil: string) {
+    const date = new Date(heldUntil).toLocaleDateString(undefined, { dateStyle: "medium" });
+    return `Credits unlock ${date}`;
 }
 
 function creditsLabel(credits: number | null) {
@@ -115,7 +121,13 @@ export function UserMenu({ user, credits }: { user: SessionUser; credits: number
                     </div>
                     <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
                         <dt className="text-muted-foreground">Credits</dt>
-                        <dd>{user.banned ? "Banned: this account cannot download" : creditsLabel(credits)}</dd>
+                        <dd>
+                            {user.banned
+                                ? "Banned: this account cannot download"
+                                : user.heldUntil && credits === 0
+                                  ? `${heldLabel(user.heldUntil)}. New Discord accounts get their credits once they are old enough.`
+                                  : creditsLabel(credits)}
+                        </dd>
                         <dt className="text-muted-foreground">Account ID</dt>
                         <dd className="font-mono break-all">{user.id}</dd>
                         <dt className="self-center text-muted-foreground">Theme</dt>

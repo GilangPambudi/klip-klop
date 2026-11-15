@@ -28,6 +28,7 @@ export interface SiteConfig {
   maxClipMinutes: number;
   downloadTimeoutMinutes: number;
   downloadMaxMb: number;
+  minAccountAgeDays: number;
   maintenance: boolean;
   maintenanceMessage: string;
 }
@@ -90,6 +91,7 @@ export function parseConfig(values: Record<string, string>): SiteConfig {
     maxClipMinutes: numberSetting(values, "max_clip_minutes"),
     downloadTimeoutMinutes: numberSetting(values, "download_timeout_minutes"),
     downloadMaxMb: numberSetting(values, "download_max_mb"),
+    minAccountAgeDays: numberSetting(values, "min_account_age_days"),
     maintenance: values.maintenance === "1",
     maintenanceMessage: values.maintenance_message?.trim() ?? "",
   };

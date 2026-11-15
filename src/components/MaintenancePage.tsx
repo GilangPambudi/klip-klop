@@ -7,7 +7,6 @@ import { loginAction } from "@/lib/auth-actions";
 
 interface MaintenancePageProps {
     message: string;
-    /** Sign-in provider for the admin button; null hides it. */
     provider: string | null;
 }
 

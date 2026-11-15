@@ -1,6 +1,7 @@
 import VideoEditor from "@/components/VideoEditor";
 import { MaintenancePage } from "@/components/MaintenancePage";
 import { auth, authEnabled, currentAccount, providerIds } from "@/auth";
+import { unlocksAt } from "@/lib/account-age";
 import { getConfig } from "@/lib/db/config";
 import { DEFAULT_MAINTENANCE_MESSAGE } from "@/lib/gate";
 
@@ -29,6 +30,9 @@ export default async function Home() {
           credits: account.credits,
           banned: account.banned,
           admin: account.admin,
+          heldUntil: account.held
+            ? (unlocksAt(account.id, config.minAccountAgeDays)?.toISOString() ?? null)
+            : null,
         }
       : null;
 

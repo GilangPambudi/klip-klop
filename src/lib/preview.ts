@@ -50,7 +50,6 @@ function capPreviews(maxMb: number, keep: string) {
 }
 
 interface PreviewOptions extends RunOptions {
-  /** Largest file to fetch, or null for no limit. */
   maxMb: number | null;
   dirMaxMb: number;
 }

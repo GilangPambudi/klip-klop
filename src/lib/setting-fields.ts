@@ -21,6 +21,7 @@ export const NUMBER_FIELDS = [
   { name: "max_clip_minutes", label: "Longest clip a limited account can download (minutes)", min: 1, fallback: 10 },
   { name: "download_timeout_minutes", label: "Download time limit for limited accounts (minutes)", min: 1, fallback: 10 },
   { name: "download_max_mb", label: "Largest download for limited accounts (MB)", min: 1, fallback: 500 },
+  { name: "min_account_age_days", label: "Discord account age before credits are given (days, 0 = off)", min: 0, fallback: 90 },
 ] as const satisfies readonly NumberField[];
 
 export type NumberSettingName = (typeof NUMBER_FIELDS)[number]["name"];

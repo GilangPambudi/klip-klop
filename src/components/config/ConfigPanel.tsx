@@ -24,6 +24,7 @@ import {
 import { ErrorDialog, type Failure } from "@/components/video-editor/ErrorDialog";
 import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { Settings } from "@/lib/db/settings";
+import { NUMBER_FIELDS } from "@/lib/setting-fields";
 import { UsersTab, type UserRow } from "@/components/config/UsersTab";
 import { cn } from "@/lib/utils";
 
@@ -229,19 +230,16 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, sel
                                     </Button>
                                 </div>
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="retries" className="text-muted-foreground text-xs sm:text-sm">Preview load retries (0 to 10)</Label>
-                                <Input id="retries" inputMode="numeric" value={settings.preview_retries} onChange={(e) => set("preview_retries")(e.target.value)} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="credits" className="text-muted-foreground text-xs sm:text-sm">Credits for new accounts</Label>
-                                <Input id="credits" inputMode="numeric" value={settings.starting_credits} onChange={(e) => set("starting_credits")(e.target.value)} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="previewmax" className="text-muted-foreground text-xs sm:text-sm">Max preview size, TikTok and Instagram (MB)</Label>
-                                <Input id="previewmax" inputMode="numeric" value={settings.preview_max_mb} onChange={(e) => set("preview_max_mb")(e.target.value)} />
-                            </div>
+                            {NUMBER_FIELDS.map((field) => (
+                                <div key={field.name} className="flex flex-col gap-1.5">
+                                    <Label htmlFor={field.name} className="text-muted-foreground text-xs sm:text-sm">{field.label}</Label>
+                                    <Input id={field.name} inputMode="numeric" value={settings[field.name]} onChange={(e) => set(field.name)(e.target.value)} />
+                                </div>
+                            ))}
                         </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                            Unlimited and admin accounts skip every limit except free disk.
+                        </p>
                         <div className="flex justify-end">
                             <Button onClick={() => void saveSettings()} disabled={saving}>
                                 {saving ? "Saving..." : "Save"}

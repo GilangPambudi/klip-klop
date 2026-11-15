@@ -29,6 +29,16 @@ test("valid rows are used", () => {
   assert.equal(parseConfig({ default_theme: "neon" }).defaultTheme, "neon");
 });
 
+test("abuse limits start at their defaults and ignore nonsense", () => {
+  assert.equal(DEFAULTS.previewMaxMbGuest, 50);
+  assert.equal(DEFAULTS.infoPer10minGuest, 10);
+  assert.equal(DEFAULTS.maxJobs, 3);
+  assert.equal(parseConfig({ max_jobs: "0" }).maxJobs, 3);
+  assert.equal(parseConfig({ info_per_10min_guest: "0" }).infoPer10minGuest, 0);
+  assert.equal(parseConfig({ min_free_disk_gb: "12" }).minFreeDiskGb, 12);
+  assert.equal(parseConfig({ preview_dir_max_mb: "10" }).previewDirMaxMb, 2000);
+});
+
 test('"max" means the highest resolution available', () => {
   assert.equal(parseConfig({ default_height: "max" }).defaultHeight, null);
 });

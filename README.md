@@ -117,6 +117,20 @@ Editable on `/config` or by hand. These take effect without a restart:
 
 A missing or invalid value falls back to `max`, `mono` and `24`.
 
+Abuse limits, also on `/config`. Unlimited and admin accounts skip all of them except the free disk check:
+
+| name | default | meaning |
+|---|---|---|
+| `preview_max_mb_guest` | `50` | Largest TikTok or Instagram preview a signed-out visitor can load |
+| `preview_max_mb` | `200` | The same for signed-in accounts |
+| `preview_dir_max_mb` | `2000` | Total size of the preview folder; the oldest previews go first |
+| `info_per_10min_guest` | `10` | Video loads per 10 minutes for one signed-out IP |
+| `info_per_10min_member` | `30` | Video loads per 10 minutes for one signed-in account |
+| `max_jobs` | `3` | Loads and downloads running at once on the whole server |
+| `min_free_disk_gb` | `5` | Below this much free disk, loads and downloads are refused for everyone |
+
+Loads by signed-out and limited accounts stop after 3 minutes, and a load stops as soon as the visitor closes the tab.
+
 #### Accounts (`users` table)
 
 An account is created the first time someone logs in.

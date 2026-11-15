@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import { Readable } from "stream";
 import { gate } from "@/lib/gate";
-import { previewPath } from "@/lib/preview";
+import { markPreviewWatched, previewPath } from "@/lib/preview";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
-  const { denied } = await gate(req);
+  const { denied } = await gate(req, { needAccount: false });
   if (denied) return denied;
 
   const { token } = await params;
@@ -17,6 +17,7 @@ export async function GET(
     return new NextResponse("Preview not found or expired", { status: 404 });
   }
 
+  markPreviewWatched(filePath);
   const fileSize = fs.statSync(filePath).size;
   const range = req.headers.get("range")?.match(/^bytes=(\d*)-(\d*)$/);
   const baseHeaders = {

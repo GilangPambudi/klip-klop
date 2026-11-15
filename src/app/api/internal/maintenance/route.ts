@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getConfig } from "@/lib/db/config";
 import { setMaintenance } from "@/lib/db/settings";
+import { forgetGateCache } from "@/lib/gate";
 import { internalAuthorized, internalNotFound } from "@/lib/internal-auth";
 
 async function status() {
@@ -25,5 +26,6 @@ export async function POST(req: NextRequest) {
   }
 
   await setMaintenance(body.on, body.message);
+  forgetGateCache();
   return status();
 }

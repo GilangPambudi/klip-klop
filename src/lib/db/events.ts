@@ -28,11 +28,18 @@ export async function pruneEvents() {
 export async function lastLoginIps(userIds: string[]): Promise<Record<string, string>> {
   if (userIds.length === 0) return {};
   try {
+    const logins = and(inArray(events.type, ["login", "signup"]), inArray(events.userId, userIds));
+    const latest = db()
+      .select({ userId: events.userId, at: sql<Date>`max(${events.createdAt})`.as("at") })
+      .from(events)
+      .where(logins)
+      .groupBy(events.userId)
+      .as("latest");
     const rows = await db()
       .select({ userId: events.userId, ip: events.ip })
       .from(events)
-      .where(and(inArray(events.type, ["login", "signup"]), inArray(events.userId, userIds)))
-      .orderBy(desc(events.createdAt));
+      .innerJoin(latest, and(eq(events.userId, latest.userId), eq(events.createdAt, latest.at)))
+      .where(logins);
     const result: Record<string, string> = {};
     for (const row of rows) {
       if (row.userId && !(row.userId in result)) result[row.userId] = row.ip;

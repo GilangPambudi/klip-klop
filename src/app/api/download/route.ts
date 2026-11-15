@@ -85,6 +85,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (account.held && account.credits === 0) {
+      return NextResponse.json(
+        {
+          error: `New Discord accounts get their credits once they are ${config.minAccountAgeDays} days old.`,
+          credits: 0,
+        },
+        { status: 402 },
+      );
+    }
+
     if (freeDiskGb() < config.minFreeDiskGb) {
       return NextResponse.json({ error: MESSAGES.lowDisk }, { status: 503 });
     }
@@ -113,15 +123,6 @@ export async function POST(req: NextRequest) {
     }
     releases.push(releaseJob);
 
-    if (account.held && account.credits === 0) {
-      return NextResponse.json(
-        {
-          error: `New Discord accounts get their credits once they are ${config.minAccountAgeDays} days old.`,
-          credits: 0,
-        },
-        { status: 402 },
-      );
-    }
     if (!(await takeCredit(owner))) {
       return NextResponse.json(
         { error: "No credits left", credits: 0 },

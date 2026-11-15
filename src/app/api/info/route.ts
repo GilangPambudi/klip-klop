@@ -38,6 +38,12 @@ export async function POST(req: NextRequest) {
     if (freeDiskGb() < config.minFreeDiskGb) {
       return NextResponse.json({ error: MESSAGES.lowDisk }, { status: 503 });
     }
+
+    release = startJob(config.maxJobs, tier === "unlimited");
+    if (!release) {
+      return NextResponse.json({ error: MESSAGES.busy }, { status: 503 });
+    }
+
     const allowed =
       tier === "guest" ? allowHit(`info:ip:${ip}`, config.infoPer10minGuest)
       : tier === "member" ? allowHit(`info:user:${userId}`, config.infoPer10minMember)
@@ -50,11 +56,6 @@ export async function POST(req: NextRequest) {
       );
     }
     await logEvent("load", ip, userId, link.platform);
-
-    release = startJob(config.maxJobs, tier === "unlimited");
-    if (!release) {
-      return NextResponse.json({ error: MESSAGES.busy }, { status: 503 });
-    }
 
     const run = {
       signal: req.signal,

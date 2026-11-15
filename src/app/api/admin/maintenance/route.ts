@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { currentAdmin } from "@/auth";
 import { getConfig } from "@/lib/db/config";
 import { setMaintenance } from "@/lib/db/settings";
+import { forgetGateCache } from "@/lib/gate";
 
 const notFound = () => NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -14,6 +15,7 @@ export async function PUT(req: NextRequest) {
   }
 
   await setMaintenance(body.on, body.message);
+  forgetGateCache();
   const config = await getConfig();
   return NextResponse.json({ on: config.maintenance, message: config.maintenanceMessage });
 }

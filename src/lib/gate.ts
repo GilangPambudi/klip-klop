@@ -12,6 +12,43 @@ export const BLOCKED_MESSAGE =
 
 export type Account = NonNullable<Awaited<ReturnType<typeof currentAccount>>>;
 
+const CONFIG_TTL_MS = 5_000;
+const BLOCKED_TTL_MS = 15_000;
+
+interface GateCache {
+  config: { at: number; value: SiteConfig } | null;
+  blocked: Map<string, { at: number; value: boolean }>;
+}
+
+const globalGate = globalThis as typeof globalThis & { __klipKlopGate?: GateCache };
+const cache: GateCache = (globalGate.__klipKlopGate ??= {
+  config: null,
+  blocked: new Map<string, { at: number; value: boolean }>(),
+});
+
+async function cachedConfig() {
+  const now = Date.now();
+  if (!cache.config || now - cache.config.at > CONFIG_TTL_MS) {
+    cache.config = { at: now, value: await getConfig() };
+  }
+  return cache.config.value;
+}
+
+async function cachedBlocked(ip: string) {
+  const now = Date.now();
+  const hit = cache.blocked.get(ip);
+  if (hit && now - hit.at <= BLOCKED_TTL_MS) return hit.value;
+  const value = await isBlocked(ip);
+  if (cache.blocked.size > 10_000) cache.blocked.clear();
+  cache.blocked.set(ip, { at: now, value });
+  return value;
+}
+
+export function forgetGateCache() {
+  cache.config = null;
+  cache.blocked.clear();
+}
+
 interface Gate {
   account: Account | null;
   config: SiteConfig;
@@ -19,12 +56,20 @@ interface Gate {
   denied: NextResponse | null;
 }
 
-export async function gate(req: NextRequest): Promise<Gate> {
-  const [account, config] = await Promise.all([currentAccount(), getConfig()]);
+export async function gate(req: NextRequest, { needAccount = true } = {}): Promise<Gate> {
+  const config = await cachedConfig();
   const ip = clientIp(req);
+
+  if (!authEnabled) {
+    return { account: needAccount ? await currentAccount() : null, config, ip, denied: null };
+  }
+
+  const blocked = !config.maintenance && (await cachedBlocked(ip));
+  const restricted = config.maintenance || blocked;
+  const account = needAccount || restricted ? await currentAccount() : null;
   const pass = { account, config, ip, denied: null };
 
-  if (!authEnabled || account?.admin) return pass;
+  if (!restricted || account?.admin) return pass;
 
   if (config.maintenance) {
     return {
@@ -35,8 +80,5 @@ export async function gate(req: NextRequest): Promise<Gate> {
       ),
     };
   }
-  if (await isBlocked(ip)) {
-    return { ...pass, denied: NextResponse.json({ error: BLOCKED_MESSAGE }, { status: 403 }) };
-  }
-  return pass;
+  return { ...pass, denied: NextResponse.json({ error: BLOCKED_MESSAGE }, { status: 403 }) };
 }

@@ -25,12 +25,23 @@ function sweepPreviews() {
   }
 }
 
+const IN_USE_MS = 2 * 60 * 1000;
+
+export function markPreviewWatched(filePath: string) {
+  try {
+    const now = new Date();
+    fs.utimesSync(filePath, now, now);
+  } catch {}
+}
+
 function capPreviews(maxMb: number, keep: string) {
+  const inUseSince = Date.now() - IN_USE_MS;
   const files = fs.readdirSync(PREVIEW_DIR).flatMap((name) => {
     if (name.startsWith(keep) || /\.(part|ytdl)$/.test(name)) return [];
     const filePath = path.join(PREVIEW_DIR, name);
     try {
       const stat = fs.statSync(filePath);
+      if (stat.mtimeMs > inUseSince) return [];
       return stat.isFile() ? [{ filePath, size: stat.size, mtime: stat.mtimeMs }] : [];
     } catch {
       return [];

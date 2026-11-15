@@ -116,8 +116,9 @@ function launch(
       if (stopped || child.exitCode !== null) return;
       stopped = why;
       try {
-        if (!isWin && child.pid) process.kill(-child.pid, "SIGKILL");
-        else child.kill("SIGKILL");
+        if (!child.pid) child.kill("SIGKILL");
+        else if (isWin) spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
+        else process.kill(-child.pid, "SIGKILL");
       } catch {}
     };
     const onAbort = () => stop(STOPPED_CANCELLED);

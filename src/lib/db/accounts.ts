@@ -36,21 +36,16 @@ async function releaseCredits(id: string, credits: number) {
 export async function touchUser({ id, provider, name, image, unlimited }: Profile) {
   const now = new Date();
   const { startingCredits, minAccountAgeDays } = await getConfig();
-  const [result] = await db()
-    .insert(users)
-    .values({
-      id,
-      provider,
-      name,
-      image,
-      credits: startingCredits,
-      unlimited: unlimited ?? false,
-      createdAt: now,
-      lastLoginAt: now,
-    })
-    // Credits, unlimited and banned are deliberately left alone on later logins.
-    .onDuplicateKeyUpdate({ set: { name, image, lastLoginAt: now } });
+  const [result] = await db().execute(sql`
+    INSERT IGNORE INTO users (id, provider, name, image, credits, unlimited, created_at, last_login_at)
+    VALUES (${id}, ${provider}, ${name}, ${image}, ${startingCredits}, ${unlimited ?? false}, ${now}, ${now})
+  `);
   const created = result.affectedRows === 1;
+
+  if (!created) {
+    // Credits, unlimited and banned are deliberately left alone on later logins.
+    await db().update(users).set({ name, image, lastLoginAt: now }).where(eq(users.id, id));
+  }
 
   const young = unlocksAt(id, minAccountAgeDays) !== null;
   if (created && young) await holdCredits(id);
@@ -89,11 +84,23 @@ export async function getAccount(id: string): Promise<Account | null> {
     .from(users)
     .where(eq(users.id, id));
   if (!user) return null;
+
+  let held = !user.unlimited && user.credits === 0 && (await isHeld(id));
+  let credits = user.credits;
+  if (held) {
+    const { startingCredits, minAccountAgeDays } = await getConfig();
+    if (unlocksAt(id, minAccountAgeDays) === null) {
+      await releaseCredits(id, startingCredits);
+      credits += startingCredits;
+      held = false;
+    }
+  }
+
   return {
-    credits: user.unlimited ? null : user.credits,
+    credits: user.unlimited ? null : credits,
     banned: user.banned,
     admin: user.admin,
-    held: !user.unlimited && user.credits === 0 && (await isHeld(id)),
+    held,
   };
 }
 

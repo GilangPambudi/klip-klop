@@ -9,7 +9,7 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
-  const { denied } = await gate(req);
+  const { denied } = await gate(req, { needAccount: false });
   if (denied) return denied;
 
   await sweepExpired();

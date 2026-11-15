@@ -96,7 +96,7 @@ On Windows, `launcher.bat` does steps 2, 5 and 6 for you. The database and `.env
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client. Redirect URL: `<AUTH_URL>/api/auth/callback/google`. |
 | `YT_DLP_COOKIES` | Path to a Netscape cookie file for YouTube, for a server that gets "Sign in to confirm you're not a bot". Optional. |
 
-If `AUTH_SECRET` is left empty, sign-in is switched off completely: anyone who can reach the app can download, without credits. That suits a private machine only. Always set it on a public server.
+If `AUTH_SECRET` is left empty, sign-in is switched off completely: anyone who can reach the app can download, without credits. That suits a private machine only. In production (`npm start`) the app refuses to run without `AUTH_SECRET` unless `ALLOW_NO_AUTH=true` is set.
 
 #### Admin page (`/config`)
 
@@ -117,11 +117,50 @@ Editable on `/config` or by hand. These take effect without a restart:
 
 A missing or invalid value falls back to `max`, `mono` and `24`.
 
+Abuse limits, also on `/config`. Unlimited and admin accounts skip all of them except the free disk check:
+
+| name | default | meaning |
+|---|---|---|
+| `preview_max_mb_guest` | `50` | Largest TikTok or Instagram preview a signed-out visitor can load |
+| `preview_max_mb` | `200` | The same for signed-in accounts |
+| `preview_dir_max_mb` | `2000` | Total size of the preview folder; the oldest previews go first |
+| `info_per_10min_guest` | `10` | Video loads per 10 minutes for one signed-out IP |
+| `info_per_10min_member` | `30` | Video loads per 10 minutes for one signed-in account |
+| `max_jobs` | `3` | Loads and downloads running at once on the whole server |
+| `min_free_disk_gb` | `5` | Below this much free disk, loads and downloads are refused for everyone |
+| `max_clip_minutes` | `10` | Longest clip a limited account can download; an open End counts to the end of the video |
+| `download_timeout_minutes` | `10` | A limited account's download is stopped after this long, and the credit comes back |
+| `download_max_mb` | `500` | Largest whole-video download for a limited account (cut clips are bounded by length instead) |
+
+A limited account also runs one download at a time, cannot download live streams, and its download stops when the tab is closed.
+
+#### Maintenance and blocked IPs
+
+The Settings tab on `/config` has a maintenance switch with an optional message. While it is on, visitors get a maintenance page and every load, download, preview and share link answers 503. Admin accounts keep using the site, and the page has an Admin log in button.
+
+The Blocked IPs tab blocks an IP for a number of hours (24 by default). A blocked IP gets 403 on the same routes. Admin accounts are never blocked. One IP can be shared by many people, so keep blocks short.
+
+Loads, logins, sign-ups, downloads, failed downloads and rate-limit hits are logged with the visitor's IP in the `events` table for 30 days. The Users tab shows each account's last login IP.
+
+#### Internal API
+
+For a bot on the same machine. Every call needs `Authorization: Bearer <INTERNAL_API_TOKEN>` (at least 32 characters in `.env`), and anything that came through the reverse proxy gets 404.
+
+| Route | Does |
+|---|---|
+| `POST /api/internal/fetch` | `{"url": "...", "audio": true}`: returns the whole media file, up to 200 MB |
+| `GET /api/internal/maintenance` | Maintenance status |
+| `POST /api/internal/maintenance` | `{"on": true, "message": "optional"}` switches maintenance |
+| `GET /api/internal/anomalies` | `ok`, a list of `alerts`, free disk and running jobs. Tune with `?minutes=10&signups=3&loads=40&failed=5` |
+
+Loads by signed-out and limited accounts stop after 3 minutes, and a load stops as soon as the visitor closes the tab.
+
 #### Accounts (`users` table)
 
 An account is created the first time someone logs in.
 
 - `credits`: downloads left. Starts at 3 and never refills; edit the number to top an account up.
+- `credits_held`: set on a Discord account younger than `min_account_age_days` (90 by default, `0` turns it off, read from the account ID). It starts with 0 credits, and its starting credits are added on the first login after it is old enough. Editing its credits on `/config` clears the hold.
 - `unlimited`: set to `1` to stop charging the account.
 - `banned`: set to `1` to block its downloads.
 - `admin`: set to `1` to open `/config` for the account.
@@ -135,7 +174,7 @@ Run `npm run db:migrate` again whenever the `drizzle/` folder has new files.
 ```bash
 npm test          # filename, config and (with DATABASE_URL set) account tests
 npx tsc --noEmit  # typecheck
-npx eslint src    # lint
+npm run lint      # eslint
 ```
 
 The account tests use the database in `DATABASE_URL`. They create throwaway `test:` accounts and remove them afterwards.

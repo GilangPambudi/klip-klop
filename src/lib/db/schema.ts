@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   datetime,
   index,
@@ -22,8 +23,32 @@ export const users = mysqlTable("users", {
   /** Cannot download. */
   banned: boolean("banned").notNull().default(false),
   admin: boolean("admin").notNull().default(false),
+  creditsHeld: boolean("credits_held").notNull().default(false),
   createdAt: datetime("created_at").notNull(),
   lastLoginAt: datetime("last_login_at").notNull(),
+});
+
+export const events = mysqlTable(
+  "events",
+  {
+    id: bigint("id", { mode: "number" }).autoincrement().primaryKey(),
+    type: varchar("type", { length: 20 }).notNull(),
+    ip: varchar("ip", { length: 45 }).notNull(),
+    userId: varchar("user_id", { length: 80 }),
+    detail: varchar("detail", { length: 255 }),
+    createdAt: datetime("created_at").notNull(),
+  },
+  (table) => [
+    index("events_created_idx").on(table.createdAt),
+    index("events_ip_idx").on(table.ip, table.createdAt),
+  ],
+);
+
+export const blockedIps = mysqlTable("blocked_ips", {
+  ip: varchar("ip", { length: 45 }).primaryKey(),
+  reason: varchar("reason", { length: 255 }).notNull().default(""),
+  createdAt: datetime("created_at").notNull(),
+  expiresAt: datetime("expires_at").notNull(),
 });
 
 // Site-wide settings, edited by hand in the database. See config.ts for the names and their fallbacks.

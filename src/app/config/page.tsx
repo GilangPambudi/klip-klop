@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import { currentAdmin } from "@/auth";
 import { ConfigPanel } from "@/components/config/ConfigPanel";
-import { listUsers } from "@/lib/db/accounts";
-import { DEFAULTS } from "@/lib/db/config";
+import { usersForAdmin } from "@/lib/admin-users";
+import { getConfig } from "@/lib/db/config";
+import { listBlockedIps } from "@/lib/db/events";
 import { readSettings } from "@/lib/db/settings";
 import { listProxies } from "@/lib/proxies";
 
@@ -12,29 +13,26 @@ export default async function ConfigPage() {
   const admin = await currentAdmin();
   if (!admin) notFound();
 
-  const [settings, proxies, users] = await Promise.all([readSettings(), listProxies(), listUsers()]);
+  const [settings, proxies, users, config, blocked] = await Promise.all([
+    readSettings(),
+    listProxies(),
+    usersForAdmin(),
+    getConfig(),
+    listBlockedIps().catch(() => []),
+  ]);
 
   return (
     <main className="min-h-screen bg-background flex justify-center px-3 pt-3 pb-20 lg:px-4 lg:py-10">
       <div className="w-full max-w-3xl">
         <ConfigPanel
-          initialSettings={{
-            ...settings,
-            preview_retries: settings.preview_retries || String(DEFAULTS.previewRetries),
-            starting_credits: settings.starting_credits || String(DEFAULTS.startingCredits),
-            preview_max_mb: settings.preview_max_mb || String(DEFAULTS.previewMaxMb),
-          }}
+          initialSettings={settings}
           initialProxies={proxies}
-          initialUsers={users.map((u) => ({
-            id: u.id,
-            provider: u.provider,
-            name: u.name,
-            image: u.image,
-            credits: u.credits,
-            unlimited: u.unlimited,
-            banned: u.banned,
-            admin: u.admin,
-            lastLoginAt: u.lastLoginAt.toISOString(),
+          initialUsers={users}
+          initialMaintenance={{ on: config.maintenance, message: config.maintenanceMessage }}
+          initialBlocked={blocked.map((b) => ({
+            ip: b.ip,
+            reason: b.reason,
+            expiresAt: b.expiresAt.toISOString(),
           }))}
           selfId={admin.id}
         />

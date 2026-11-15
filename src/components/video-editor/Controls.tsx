@@ -38,6 +38,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AUDIO_FORMATS, isAudioFormat, type MediaFormat } from "@/lib/formats";
+import { heldLabel } from "@/components/video-editor/UserMenu";
 
 interface TimeState {
   h: string;
@@ -85,6 +86,7 @@ interface ControlsProps {
   credits: number | null;
   /** The signed-in account may not download. */
   banned: boolean;
+  heldUntil: string | null;
   videoId: string;
   downloadedFilename: string | null;
   onPreview: () => void;
@@ -127,6 +129,7 @@ export function Controls({
   isDownloading,
   credits,
   banned,
+  heldUntil,
   videoId,
   downloadedFilename,
   onPreview,
@@ -370,6 +373,8 @@ export function Controls({
                   {/* The balance sits where it gets spent; null = not charged, so nothing to show. */}
                   {banned ? (
                     "Account banned"
+                  ) : credits === 0 && heldUntil ? (
+                    heldLabel(heldUntil)
                   ) : credits === 0 ? (
                     "No credits left"
                   ) : (

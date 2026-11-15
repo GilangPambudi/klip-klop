@@ -29,6 +29,20 @@
       "when": 1794407649876,
       "tag": "0003_admin_and_proxies",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1794755828221,
+      "tag": "0004_events_and_blocked_ips",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1794756279129,
+      "tag": "0005_hold_young_account_credits",
+      "breakpoints": true
     }
   ]
 }

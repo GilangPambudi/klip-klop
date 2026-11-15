@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import open from "open";
-import path from "path";
 import fs from "fs";
+import { authEnabled } from "@/auth";
+import { DOWNLOAD_DIR } from "@/lib/downloader";
 
 export async function POST() {
-  const downloadDir = path.resolve(process.cwd(), "download");
-
-  if (!fs.existsSync(downloadDir)) {
-    fs.mkdirSync(downloadDir, { recursive: true });
+  if (authEnabled) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
+
   try {
-    await open(downloadDir);
+    await open(DOWNLOAD_DIR);
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     console.error("Open Folder Error:", error);

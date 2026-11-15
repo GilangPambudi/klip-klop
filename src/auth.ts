@@ -1,10 +1,31 @@
 import NextAuth from "next-auth";
 import Discord from "next-auth/providers/discord";
 import Google from "next-auth/providers/google";
+import { headers } from "next/headers";
 import { getAccount, touchUser } from "@/lib/db/accounts";
+import { logEvent } from "@/lib/db/events";
+import { ipFromForwarded } from "@/lib/guard";
+
+async function requestIp() {
+  try {
+    return ipFromForwarded((await headers()).get("x-forwarded-for"));
+  } catch {
+    return "unknown";
+  }
+}
 
 // No AUTH_SECRET = the local launcher: nobody signs in and every download belongs to one "local" user.
 export const authEnabled = Boolean(process.env.AUTH_SECRET);
+
+if (
+  !authEnabled &&
+  process.env.NODE_ENV === "production" &&
+  process.env.ALLOW_NO_AUTH !== "true"
+) {
+  throw new Error(
+    "AUTH_SECRET is empty, which would leave downloads and /config open to anyone. Set AUTH_SECRET, or ALLOW_NO_AUTH=true for a private machine.",
+  );
+}
 
 // Google is wired up but stays off until AUTH_GOOGLE_ENABLED=true (with AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET).
 const googleEnabled = process.env.AUTH_GOOGLE_ENABLED === "true";
@@ -34,12 +55,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Prefixed so a Discord ID can never collide with a Google one.
         const id = `${account.provider}:${account.providerAccountId}`;
         token.uid = id;
-        await touchUser({
+        const created = await touchUser({
           id,
           provider: account.provider,
           name: token.name ?? "",
           image: token.picture ?? null,
         });
+        await logEvent(created ? "signup" : "login", await requestIp(), id);
       }
       return token;
     },
@@ -50,7 +72,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-let localUserReady: Promise<void> | undefined;
+let localUserReady: Promise<boolean> | undefined;
 
 /**
  * The account behind this request with its balance and ban flag, or null when

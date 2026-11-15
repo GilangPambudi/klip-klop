@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { contentTypeFor } from "@/lib/formats";
 import { ownsFile } from "@/lib/filenames";
-import { currentAccount } from "@/auth";
+import { gate } from "@/lib/gate";
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
 
   // Previews are private: only the account whose prefix the file carries may
   // play it. Anyone else gets the same answer as for a missing file.
-  const account = await currentAccount();
+  const { account, denied } = await gate(req);
+  if (denied) return denied;
   if (!account || !ownsFile(account.id, safeFilename) || !fs.existsSync(filePath)) {
     return new NextResponse("File not found", { status: 404 });
   }

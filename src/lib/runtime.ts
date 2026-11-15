@@ -1,9 +1,6 @@
-import { execFile, spawn } from "child_process";
-import { promisify } from "util";
+import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
-
-const execFileAsync = promisify(execFile);
 
 export const YTDLP_COMMON_ARGS = [
   "--js-runtimes",
@@ -83,48 +80,84 @@ export function resolveBinary(name: "yt-dlp" | "ffmpeg"): ResolvedBinary {
   return resolved;
 }
 
-/** For short-lived probes. Output is buffered, so keep the output small. */
-export async function runTool(name: "yt-dlp" | "ffmpeg", args: string[]) {
-  const { command, useShell } = resolveBinary(name);
-  const { stdout, stderr } = await execFileAsync(command, args, {
-    shell: useShell,
-    windowsHide: true,
-  });
-  return { stdout, stderr };
+export interface RunOptions {
+  signal?: AbortSignal;
+  timeoutMs?: number;
 }
 
-/**
- * For downloads and transcodes. Streams output instead of buffering it, since
- * yt-dlp progress on a long video overflows execFile's maxBuffer.
- */
-export function streamTool(
+export const STOPPED_TIME_LIMIT = "Stopped: it took longer than the time limit.";
+export const STOPPED_CANCELLED = "Cancelled.";
+
+function launch(
   name: "yt-dlp" | "ffmpeg",
   args: string[],
+  { signal, timeoutMs }: RunOptions,
+  echo: boolean,
 ): Promise<{ stdout: string; stderr: string }> {
   const { command, useShell } = resolveBinary(name);
 
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { shell: useShell, windowsHide: true });
+    if (signal?.aborted) {
+      reject(new Error(STOPPED_CANCELLED));
+      return;
+    }
+
+    const child = spawn(command, args, {
+      shell: useShell,
+      windowsHide: true,
+      detached: !isWin,
+    });
 
     let stdout = "";
     let stderr = "";
+    let stopped: string | null = null;
+
+    const stop = (why: string) => {
+      if (stopped || child.exitCode !== null) return;
+      stopped = why;
+      try {
+        if (!child.pid) child.kill("SIGKILL");
+        else if (isWin) spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"], { windowsHide: true });
+        else process.kill(-child.pid, "SIGKILL");
+      } catch {}
+    };
+    const onAbort = () => stop(STOPPED_CANCELLED);
+    signal?.addEventListener("abort", onAbort, { once: true });
+    const timer = timeoutMs ? setTimeout(() => stop(STOPPED_TIME_LIMIT), timeoutMs) : undefined;
+    const finish = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+    };
 
     child.stdout.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       stdout += text;
-      process.stdout.write(text);
+      if (echo) process.stdout.write(text);
     });
 
     child.stderr.on("data", (chunk: Buffer) => {
       const text = chunk.toString();
       stderr += text;
-      process.stderr.write(text);
+      if (echo) process.stderr.write(text);
     });
 
-    child.on("error", reject);
+    child.on("error", (error) => {
+      finish();
+      reject(error);
+    });
     child.on("close", (code) => {
-      if (code === 0) resolve({ stdout, stderr });
+      finish();
+      if (stopped) reject(new Error(stopped));
+      else if (code === 0) resolve({ stdout, stderr });
       else reject(new Error(`${name} exited with code ${code}\n${stderr}`));
     });
   });
+}
+
+export function runTool(name: "yt-dlp" | "ffmpeg", args: string[], options: RunOptions = {}) {
+  return launch(name, args, options, false);
+}
+
+export function streamTool(name: "yt-dlp" | "ffmpeg", args: string[], options: RunOptions = {}) {
+  return launch(name, args, options, true);
 }

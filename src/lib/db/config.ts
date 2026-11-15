@@ -1,5 +1,6 @@
 import { db } from "./index.ts";
 import { config } from "./schema.ts";
+import { numberField, type NumberSettingName } from "../setting-fields.ts";
 
 export const THEME_IDS = ["mono-light", "mono-dark", "neon-light", "neon-dark"];
 /** A family on its own means "this look, light or dark to match the visitor's device". */
@@ -18,23 +19,29 @@ export interface SiteConfig {
   previewRetries: number;
   startingCredits: number;
   previewMaxMb: number;
+  previewMaxMbGuest: number;
+  previewDirMaxMb: number;
+  infoPer10minGuest: number;
+  infoPer10minMember: number;
+  maxJobs: number;
+  minFreeDiskGb: number;
+  maxClipMinutes: number;
+  downloadTimeoutMinutes: number;
+  downloadMaxMb: number;
+  minAccountAgeDays: number;
+  maintenance: boolean;
+  maintenanceMessage: string;
 }
-
-export const DEFAULTS: SiteConfig = {
-  defaultHeight: null,
-  defaultTheme: "mono",
-  retentionHours: 24,
-  previewRetries: 3,
-  startingCredits: 3,
-  previewMaxMb: 200,
-};
-
-export const MAX_PREVIEW_RETRIES = 10;
 
 const wholeNumber = (raw: string | undefined, min: number, max = Infinity) => {
   if (raw === undefined || raw.trim() === "") return null;
   const value = Number(raw);
   return Number.isInteger(value) && value >= min && value <= max ? value : null;
+};
+
+const numberSetting = (values: Record<string, string>, name: NumberSettingName) => {
+  const field = numberField(name);
+  return wholeNumber(values[name], field.min, field.max) ?? field.fallback;
 };
 
 /**
@@ -67,20 +74,30 @@ export function parseConfig(values: Record<string, string>): SiteConfig {
   const height = Number(values.default_height);
   const hours = Number(values.retention_hours);
   return {
-    defaultHeight:
-      Number.isInteger(height) && height > 0 ? height : DEFAULTS.defaultHeight,
+    defaultHeight: Number.isInteger(height) && height > 0 ? height : null,
     defaultTheme: [...THEME_FAMILIES, ...THEME_IDS].includes(values.default_theme)
       ? values.default_theme
-      : DEFAULTS.defaultTheme,
-    retentionHours:
-      Number.isFinite(hours) && hours > 0 ? hours : DEFAULTS.retentionHours,
-    previewRetries:
-      wholeNumber(values.preview_retries, 0, MAX_PREVIEW_RETRIES) ?? DEFAULTS.previewRetries,
-    startingCredits:
-      wholeNumber(values.starting_credits, 0) ?? DEFAULTS.startingCredits,
-    previewMaxMb: wholeNumber(values.preview_max_mb, 1) ?? DEFAULTS.previewMaxMb,
+      : "mono",
+    retentionHours: Number.isFinite(hours) && hours > 0 ? hours : 24,
+    previewRetries: numberSetting(values, "preview_retries"),
+    startingCredits: numberSetting(values, "starting_credits"),
+    previewMaxMb: numberSetting(values, "preview_max_mb"),
+    previewMaxMbGuest: numberSetting(values, "preview_max_mb_guest"),
+    previewDirMaxMb: numberSetting(values, "preview_dir_max_mb"),
+    infoPer10minGuest: numberSetting(values, "info_per_10min_guest"),
+    infoPer10minMember: numberSetting(values, "info_per_10min_member"),
+    maxJobs: numberSetting(values, "max_jobs"),
+    minFreeDiskGb: numberSetting(values, "min_free_disk_gb"),
+    maxClipMinutes: numberSetting(values, "max_clip_minutes"),
+    downloadTimeoutMinutes: numberSetting(values, "download_timeout_minutes"),
+    downloadMaxMb: numberSetting(values, "download_max_mb"),
+    minAccountAgeDays: numberSetting(values, "min_account_age_days"),
+    maintenance: values.maintenance === "1",
+    maintenanceMessage: values.maintenance_message?.trim() ?? "",
   };
 }
+
+export const DEFAULTS: SiteConfig = parseConfig({});
 
 export async function getConfig(): Promise<SiteConfig> {
   try {

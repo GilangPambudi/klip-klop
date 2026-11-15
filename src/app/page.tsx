@@ -1,10 +1,24 @@
 import VideoEditor from "@/components/VideoEditor";
+import { MaintenancePage } from "@/components/MaintenancePage";
 import { auth, authEnabled, currentAccount, providerIds } from "@/auth";
+import { unlocksAt } from "@/lib/account-age";
 import { getConfig } from "@/lib/db/config";
+import { DEFAULT_MAINTENANCE_MESSAGE } from "@/lib/gate";
 
 export default async function Home() {
   const session = authEnabled ? await auth() : null;
   const account = session?.user ? await currentAccount() : null;
+  const config = await getConfig();
+
+  if (authEnabled && config.maintenance && !account?.admin) {
+    return (
+      <MaintenancePage
+        message={config.maintenanceMessage || DEFAULT_MAINTENANCE_MESSAGE}
+        provider={account ? null : (providerIds[0] ?? null)}
+      />
+    );
+  }
+
   const user =
     session?.user && account
       ? {
@@ -16,10 +30,11 @@ export default async function Home() {
           credits: account.credits,
           banned: account.banned,
           admin: account.admin,
+          heldUntil: account.held
+            ? (unlocksAt(account.id, config.minAccountAgeDays)?.toISOString() ?? null)
+            : null,
         }
       : null;
-
-  const config = await getConfig();
 
   return (
     <main className="min-h-screen bg-background flex items-start justify-center px-3 pt-3 pb-20 lg:px-4 lg:h-screen lg:items-center lg:py-10">

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookieArgs } from "@/lib/cookies";
+import { logEvent } from "@/lib/db/events";
+import { gate } from "@/lib/gate";
+import { allowHit, freeDiskGb, MESSAGES, startJob, tierOf } from "@/lib/guard";
 import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
 import { probeWithPreview } from "@/lib/preview";
 import { withProxies } from "@/lib/proxies";
 
+const INFO_TIMEOUT_MS = 3 * 60 * 1000;
+
 export async function POST(req: NextRequest) {
+  let release: (() => void) | null = null;
   try {
     await sweepExpired();
 
@@ -24,12 +30,51 @@ export async function POST(req: NextRequest) {
     }
     const url = link.url;
 
-    if (link.platform !== "youtube") {
-      return NextResponse.json(await probeWithPreview(url));
+    const { account, config, ip, denied } = await gate(req);
+    if (denied) return denied;
+    const tier = tierOf(account);
+    const userId = account?.id ?? null;
+
+    if (freeDiskGb() < config.minFreeDiskGb) {
+      return NextResponse.json({ error: MESSAGES.lowDisk }, { status: 503 });
     }
 
-    // One yt-dlp call fetches info AND the preview stream URL. -g prints the
-    // resolved URL on its own line after the --print output.
+    release = startJob(config.maxJobs, tier === "unlimited");
+    if (!release) {
+      return NextResponse.json({ error: MESSAGES.busy }, { status: 503 });
+    }
+
+    const allowed =
+      tier === "guest" ? allowHit(`info:ip:${ip}`, config.infoPer10minGuest)
+      : tier === "member" ? allowHit(`info:user:${userId}`, config.infoPer10minMember)
+      : true;
+    if (!allowed) {
+      await logEvent("rate_limited", ip, userId, "load");
+      return NextResponse.json(
+        { error: tier === "guest" ? MESSAGES.guestLimit : MESSAGES.memberLimit },
+        { status: 429 },
+      );
+    }
+    await logEvent("load", ip, userId, link.platform);
+
+    const run = {
+      signal: req.signal,
+      timeoutMs: tier === "unlimited" ? undefined : INFO_TIMEOUT_MS,
+    };
+
+    if (link.platform !== "youtube") {
+      return NextResponse.json(
+        await probeWithPreview(url, {
+          ...run,
+          maxMb:
+            tier === "guest" ? config.previewMaxMbGuest
+            : tier === "member" ? config.previewMaxMb
+            : null,
+          dirMaxMb: config.previewDirMaxMb,
+        }),
+      );
+    }
+
     const cookies = await cookieArgs(url);
     const { stdout } = await withProxies(url, (proxyArgs) => runTool("yt-dlp", [
       ...YTDLP_COMMON_ARGS,
@@ -49,7 +94,7 @@ export async function POST(req: NextRequest) {
       "%(duration)s",
       "--print",
       "%(formats.:.height)j",
-    ]));
+    ], run));
 
     const lines = stdout.split(/[\r\n]+/).filter(Boolean);
     const [title, durationRaw, heightsRaw, ...streamLines] = lines;
@@ -84,5 +129,7 @@ export async function POST(req: NextRequest) {
     console.error("Info Error:", error);
     const message = describeToolError(error, "Failed to read video info");
     return NextResponse.json({ error: message }, { status: 500 });
+  } finally {
+    release?.();
   }
 }

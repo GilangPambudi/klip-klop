@@ -27,7 +27,7 @@ after(async () => {
 
 test("a new account has 3 credits and runs out after 3 downloads", { skip }, async () => {
   await make("a");
-  assert.deepEqual(await getAccount(id("a")), { credits: 3, banned: false });
+  assert.deepEqual(await getAccount(id("a")), { credits: 3, banned: false, admin: false, held: false });
   assert.equal(await takeCredit(id("a")), true);
   assert.equal(await takeCredit(id("a")), true);
   assert.equal(await takeCredit(id("a")), true);
@@ -55,7 +55,7 @@ test("logging in again keeps credits and the ban", { skip }, async () => {
   await takeCredit(id("c"));
   await db().update(users).set({ banned: true }).where(eq(users.id, id("c")));
   await touchUser({ id: id("c"), provider: "test", name: "renamed", image: null });
-  assert.deepEqual(await getAccount(id("c")), { credits: 2, banned: true });
+  assert.deepEqual(await getAccount(id("c")), { credits: 2, banned: true, admin: false, held: false });
 });
 
 test("a banned account cannot take a credit", { skip }, async () => {

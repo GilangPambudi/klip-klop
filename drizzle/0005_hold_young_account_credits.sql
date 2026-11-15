@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `credits_held` boolean DEFAULT false NOT NULL;

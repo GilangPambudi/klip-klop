@@ -1,32 +1,38 @@
 import { inArray } from "drizzle-orm";
 import { db } from "./index";
 import { config } from "./schema";
-import { MAX_PREVIEW_RETRIES, THEME_IDS } from "./config";
+import { THEME_IDS } from "./config";
+import { NUMBER_FIELDS, numberField, type NumberSettingName } from "../setting-fields";
 
-export const SETTING_NAMES = [
+const TEXT_SETTING_NAMES = [
   "default_height",
   "default_theme",
   "retention_hours",
   "instagram_sessionid",
-  "preview_retries",
-  "starting_credits",
-  "preview_max_mb",
 ] as const;
 
-const wholeNumberSetting = (value: string, min: number, max = Infinity) => {
-  const number = Number(value);
-  return value !== "" && Number.isInteger(number) && number >= min && number <= max
-    ? String(number)
-    : null;
-};
-
-export type SettingName = (typeof SETTING_NAMES)[number];
+export type SettingName = (typeof TEXT_SETTING_NAMES)[number] | NumberSettingName;
 export type Settings = Record<SettingName, string>;
+
+export const SETTING_NAMES: readonly SettingName[] = [
+  ...TEXT_SETTING_NAMES,
+  ...NUMBER_FIELDS.map((f) => f.name),
+];
+
+const isNumberSetting = (name: SettingName): name is NumberSettingName =>
+  NUMBER_FIELDS.some((f) => f.name === name);
 
 const THEME_CHOICES = ["mono", "neon", ...THEME_IDS];
 
 export function validateSetting(name: SettingName, raw: string): string | null {
   const value = raw.trim();
+  if (isNumberSetting(name)) {
+    const { min, max = Infinity } = numberField(name);
+    const number = Number(value);
+    return value !== "" && Number.isInteger(number) && number >= min && number <= max
+      ? String(number)
+      : null;
+  }
   switch (name) {
     case "default_height": {
       if (value === "" || value === "max") return "max";
@@ -41,12 +47,6 @@ export function validateSetting(name: SettingName, raw: string): string | null {
     }
     case "instagram_sessionid":
       return value === "" || /^[\w%:.-]+$/.test(value) ? value : null;
-    case "preview_retries":
-      return wholeNumberSetting(value, 0, MAX_PREVIEW_RETRIES);
-    case "starting_credits":
-      return wholeNumberSetting(value, 0);
-    case "preview_max_mb":
-      return wholeNumberSetting(value, 1);
   }
 }
 
@@ -57,7 +57,10 @@ export async function readSettings(): Promise<Settings> {
     .where(inArray(config.name, [...SETTING_NAMES]));
   const values = Object.fromEntries(rows.map((r) => [r.name, r.value]));
   return Object.fromEntries(
-    SETTING_NAMES.map((name) => [name, values[name] ?? ""]),
+    SETTING_NAMES.map((name) => [
+      name,
+      values[name] ?? (isNumberSetting(name) ? String(numberField(name).fallback) : ""),
+    ]),
   ) as Settings;
 }
 
@@ -71,6 +74,21 @@ export async function writeSettings(values: Partial<Settings>) {
       .insert(config)
       .values({ name, value })
       .onDuplicateKeyUpdate({ set: { value } });
+  }
+}
+
+export const MAINTENANCE_MESSAGE_MAX = 200;
+
+export async function setMaintenance(on: boolean, message?: string) {
+  const rows = [{ name: "maintenance", value: on ? "1" : "0" }];
+  if (message !== undefined) {
+    rows.push({ name: "maintenance_message", value: message.trim().slice(0, MAINTENANCE_MESSAGE_MAX) });
+  }
+  for (const row of rows) {
+    await db()
+      .insert(config)
+      .values(row)
+      .onDuplicateKeyUpdate({ set: { value: row.value } });
   }
 }
 

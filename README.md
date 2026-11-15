@@ -96,7 +96,7 @@ On Windows, `launcher.bat` does steps 2, 5 and 6 for you. The database and `.env
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google OAuth client. Redirect URL: `<AUTH_URL>/api/auth/callback/google`. |
 | `YT_DLP_COOKIES` | Path to a Netscape cookie file for YouTube, for a server that gets "Sign in to confirm you're not a bot". Optional. |
 
-If `AUTH_SECRET` is left empty, sign-in is switched off completely: anyone who can reach the app can download, without credits. That suits a private machine only. Always set it on a public server.
+If `AUTH_SECRET` is left empty, sign-in is switched off completely: anyone who can reach the app can download, without credits. That suits a private machine only. In production (`npm start`) the app refuses to run without `AUTH_SECRET` unless `ALLOW_NO_AUTH=true` is set.
 
 #### Admin page (`/config`)
 
@@ -135,7 +135,7 @@ Run `npm run db:migrate` again whenever the `drizzle/` folder has new files.
 ```bash
 npm test          # filename, config and (with DATABASE_URL set) account tests
 npx tsc --noEmit  # typecheck
-npx eslint src    # lint
+npm run lint      # eslint
 ```
 
 The account tests use the database in `DATABASE_URL`. They create throwaway `test:` accounts and remove them afterwards.

@@ -6,6 +6,16 @@ import { getAccount, touchUser } from "@/lib/db/accounts";
 // No AUTH_SECRET = the local launcher: nobody signs in and every download belongs to one "local" user.
 export const authEnabled = Boolean(process.env.AUTH_SECRET);
 
+if (
+  !authEnabled &&
+  process.env.NODE_ENV === "production" &&
+  process.env.ALLOW_NO_AUTH !== "true"
+) {
+  throw new Error(
+    "AUTH_SECRET is empty, which would leave downloads and /config open to anyone. Set AUTH_SECRET, or ALLOW_NO_AUTH=true for a private machine.",
+  );
+}
+
 // Google is wired up but stays off until AUTH_GOOGLE_ENABLED=true (with AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET).
 const googleEnabled = process.env.AUTH_GOOGLE_ENABLED === "true";
 

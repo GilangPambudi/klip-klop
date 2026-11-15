@@ -26,6 +26,7 @@ import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { Settings } from "@/lib/db/settings";
 import { NUMBER_FIELDS } from "@/lib/setting-fields";
 import { UsersTab, type UserRow } from "@/components/config/UsersTab";
+import { BlockedTab, type BlockedRow } from "@/components/config/BlockedTab";
 import { cn } from "@/lib/utils";
 
 export interface ProxyRow {
@@ -68,14 +69,24 @@ async function send<T>(url: string, method: string, body?: unknown): Promise<T> 
 const platformList = (value: string) =>
     value.split(",").filter((p): p is PlatformId => PLATFORMS.some((x) => x.id === p));
 
+interface Maintenance {
+    on: boolean;
+    message: string;
+}
+
 interface ConfigPanelProps {
     initialSettings: Settings;
     initialProxies: ProxyRow[];
     initialUsers: UserRow[];
+    initialMaintenance: Maintenance;
+    initialBlocked: BlockedRow[];
     selfId: string;
 }
 
-export function ConfigPanel({ initialSettings, initialProxies, initialUsers, selfId }: ConfigPanelProps) {
+export function ConfigPanel({ initialSettings, initialProxies, initialUsers, initialMaintenance, initialBlocked, selfId }: ConfigPanelProps) {
+    const [maintenance, setMaintenance] = useState(initialMaintenance);
+    const [maintenanceBusy, setMaintenanceBusy] = useState(false);
+    const [blockedCount, setBlockedCount] = useState(initialBlocked.length);
     const [settings, setSettings] = useState<Settings>({
         ...initialSettings,
         default_height: initialSettings.default_height || "max",
@@ -105,6 +116,18 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, sel
             fail("Could not save settings")(err);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const saveMaintenance = async (on: boolean) => {
+        setMaintenanceBusy(true);
+        try {
+            setMaintenance(await send<Maintenance>("/api/admin/maintenance", "PUT", { on, message: maintenance.message }));
+            toast.success(on ? "Maintenance is on" : "Maintenance is off");
+        } catch (err) {
+            fail("Could not change maintenance")(err);
+        } finally {
+            setMaintenanceBusy(false);
         }
     };
 
@@ -180,13 +203,47 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, sel
 
             <Card className="p-3 lg:p-4">
                 <Tabs defaultValue="settings">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
                         <TabsTrigger value="settings">Settings</TabsTrigger>
                         <TabsTrigger value="proxies">Proxies ({proxies.length})</TabsTrigger>
                         <TabsTrigger value="users">Users ({userCount})</TabsTrigger>
+                        <TabsTrigger value="blocked">Blocked IPs ({blockedCount})</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="settings" className="flex flex-col gap-4 pt-2">
+                        <div className="flex flex-col gap-3 rounded-base border-2 border-border bg-secondary-background p-3">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-heading flex-1">
+                                    {maintenance.on ? "● Maintenance is on" : "○ Maintenance is off"}
+                                </span>
+                                <Button
+                                    size="sm"
+                                    variant={maintenance.on ? "default" : "neutral"}
+                                    disabled={maintenanceBusy}
+                                    onClick={() => void saveMaintenance(!maintenance.on)}
+                                >
+                                    <Power /> {maintenance.on ? "Turn off" : "Turn on"}
+                                </Button>
+                            </div>
+                            <p className="text-xs sm:text-sm text-muted-foreground">
+                                While it is on, visitors see a maintenance page and every load and download is refused. Admin accounts keep working.
+                            </p>
+                            <div className="flex flex-col gap-1.5">
+                                <Label htmlFor="maintenance-message" className="text-muted-foreground text-xs sm:text-sm">Message (empty = the default)</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="maintenance-message"
+                                        maxLength={200}
+                                        placeholder="Klip-Klop is being fixed right now. Check back in a little while."
+                                        value={maintenance.message}
+                                        onChange={(e) => setMaintenance((m) => ({ ...m, message: e.target.value }))}
+                                    />
+                                    <Button variant="neutral" className="flex-none" disabled={maintenanceBusy} onClick={() => void saveMaintenance(maintenance.on)}>
+                                        Save
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                         <div className="grid gap-4 sm:grid-cols-2">
                             <div className="flex flex-col gap-1.5">
                                 <Label className="text-muted-foreground text-xs sm:text-sm">Default quality</Label>
@@ -317,6 +374,14 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, sel
                             initialUsers={initialUsers}
                             selfId={selfId}
                             onCount={setUserCount}
+                            onFail={(title, err) => fail(title)(err)}
+                        />
+                    </TabsContent>
+
+                    <TabsContent value="blocked" className="flex flex-col gap-3 pt-2">
+                        <BlockedTab
+                            initialBlocked={initialBlocked}
+                            onCount={setBlockedCount}
                             onFail={(title, err) => fail(title)(err)}
                         />
                     </TabsContent>

@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { deleteLink, listLinks, sweepExpired } from "@/lib/links";
-import { currentAccount } from "@/auth";
+import { gate } from "@/lib/gate";
 
 // Each visitor only ever sees their own downloads; signed out, that is none.
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { account, denied } = await gate(req);
+  if (denied) return NextResponse.json({ links: [] });
   await sweepExpired();
-  const account = await currentAccount();
   return NextResponse.json({ links: account ? await listLinks(account.id) : [] });
 }
 
 // Lives here, not on /api/d/[token]: share links are public, deleting must not be.
 export async function DELETE(req: NextRequest) {
-  const account = await currentAccount();
+  const { account, denied } = await gate(req);
+  if (denied) return denied;
   if (!account) {
     return NextResponse.json({ error: "Log in first" }, { status: 401 });
   }

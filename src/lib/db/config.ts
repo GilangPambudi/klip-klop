@@ -28,6 +28,8 @@ export interface SiteConfig {
   maxClipMinutes: number;
   downloadTimeoutMinutes: number;
   downloadMaxMb: number;
+  maintenance: boolean;
+  maintenanceMessage: string;
 }
 
 const wholeNumber = (raw: string | undefined, min: number, max = Infinity) => {
@@ -88,6 +90,8 @@ export function parseConfig(values: Record<string, string>): SiteConfig {
     maxClipMinutes: numberSetting(values, "max_clip_minutes"),
     downloadTimeoutMinutes: numberSetting(values, "download_timeout_minutes"),
     downloadMaxMb: numberSetting(values, "download_max_mb"),
+    maintenance: values.maintenance === "1",
+    maintenanceMessage: values.maintenance_message?.trim() ?? "",
   };
 }
 

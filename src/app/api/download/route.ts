@@ -6,9 +6,9 @@ import { parseLink } from "@/lib/platforms";
 import { describeToolError } from "@/lib/runtime";
 import { displayName } from "@/lib/filenames";
 import { getAccount, refundCredit, takeCredit } from "@/lib/db/accounts";
-import { getConfig } from "@/lib/db/config";
+import { logEvent } from "@/lib/db/events";
+import { gate } from "@/lib/gate";
 import { claimAccount, freeDiskGb, MESSAGES, startJob, tierOf } from "@/lib/guard";
-import { currentAccount } from "@/auth";
 
 const TIME = /^(\d{1,3}):(\d{2}):(\d{2})$/;
 
@@ -21,7 +21,8 @@ function seconds(time: string) {
 export async function POST(req: NextRequest) {
   const releases: (() => void)[] = [];
   try {
-    const account = await currentAccount();
+    const { account, config, ip, denied } = await gate(req);
+    if (denied) return denied;
     if (!account) {
       return NextResponse.json(
         { error: "Log in to download" },
@@ -84,7 +85,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = await getConfig();
     if (freeDiskGb() < config.minFreeDiskGb) {
       return NextResponse.json({ error: MESSAGES.lowDisk }, { status: 503 });
     }
@@ -155,8 +155,10 @@ export async function POST(req: NextRequest) {
     } catch (error) {
       // Only a download that actually produced a file costs a credit.
       await refundCredit(owner);
+      await logEvent("download_failed", ip, owner, describeToolError(error, "Download failed"));
       throw error;
     }
+    await logEvent("download", ip, owner, `${link.platform} ${start}-${end} ${format ?? "mp4"}`);
 
     return NextResponse.json({
       success: true,

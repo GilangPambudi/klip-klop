@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentAccount } from "@/auth";
 import { cookieArgs } from "@/lib/cookies";
-import { getConfig } from "@/lib/db/config";
-import { allowHit, clientIp, freeDiskGb, MESSAGES, startJob, tierOf } from "@/lib/guard";
+import { logEvent } from "@/lib/db/events";
+import { gate } from "@/lib/gate";
+import { allowHit, freeDiskGb, MESSAGES, startJob, tierOf } from "@/lib/guard";
 import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
@@ -30,19 +30,26 @@ export async function POST(req: NextRequest) {
     }
     const url = link.url;
 
-    const account = await currentAccount();
+    const { account, config, ip, denied } = await gate(req);
+    if (denied) return denied;
     const tier = tierOf(account);
-    const config = await getConfig();
+    const userId = account?.id ?? null;
 
     if (freeDiskGb() < config.minFreeDiskGb) {
       return NextResponse.json({ error: MESSAGES.lowDisk }, { status: 503 });
     }
-    if (tier === "guest" && !allowHit(`info:ip:${clientIp(req)}`, config.infoPer10minGuest)) {
-      return NextResponse.json({ error: MESSAGES.guestLimit }, { status: 429 });
+    const allowed =
+      tier === "guest" ? allowHit(`info:ip:${ip}`, config.infoPer10minGuest)
+      : tier === "member" ? allowHit(`info:user:${userId}`, config.infoPer10minMember)
+      : true;
+    if (!allowed) {
+      await logEvent("rate_limited", ip, userId, "load");
+      return NextResponse.json(
+        { error: tier === "guest" ? MESSAGES.guestLimit : MESSAGES.memberLimit },
+        { status: 429 },
+      );
     }
-    if (tier === "member" && account && !allowHit(`info:user:${account.id}`, config.infoPer10minMember)) {
-      return NextResponse.json({ error: MESSAGES.memberLimit }, { status: 429 });
-    }
+    await logEvent("load", ip, userId, link.platform);
 
     release = startJob(config.maxJobs, tier === "unlimited");
     if (!release) {

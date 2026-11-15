@@ -134,6 +134,25 @@ Abuse limits, also on `/config`. Unlimited and admin accounts skip all of them e
 
 A limited account also runs one download at a time, cannot download live streams, and its download stops when the tab is closed.
 
+#### Maintenance and blocked IPs
+
+The Settings tab on `/config` has a maintenance switch with an optional message. While it is on, visitors get a maintenance page and every load, download, preview and share link answers 503. Admin accounts keep using the site, and the page has an Admin log in button.
+
+The Blocked IPs tab blocks an IP for a number of hours (24 by default). A blocked IP gets 403 on the same routes. Admin accounts are never blocked. One IP can be shared by many people, so keep blocks short.
+
+Loads, logins, sign-ups, downloads, failed downloads and rate-limit hits are logged with the visitor's IP in the `events` table for 30 days. The Users tab shows each account's last login IP.
+
+#### Internal API
+
+For a bot on the same machine. Every call needs `Authorization: Bearer <INTERNAL_API_TOKEN>` (at least 32 characters in `.env`), and anything that came through the reverse proxy gets 404.
+
+| Route | Does |
+|---|---|
+| `POST /api/internal/fetch` | `{"url": "...", "audio": true}`: returns the whole media file, up to 200 MB |
+| `GET /api/internal/maintenance` | Maintenance status |
+| `POST /api/internal/maintenance` | `{"on": true, "message": "optional"}` switches maintenance |
+| `GET /api/internal/anomalies` | `ok`, a list of `alerts`, free disk and running jobs. Tune with `?minutes=10&signups=3&loads=40&failed=5` |
+
 Loads by signed-out and limited accounts stop after 3 minutes, and a load stops as soon as the visitor closes the tab.
 
 #### Accounts (`users` table)

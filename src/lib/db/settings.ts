@@ -77,4 +77,19 @@ export async function writeSettings(values: Partial<Settings>) {
   }
 }
 
+export const MAINTENANCE_MESSAGE_MAX = 200;
+
+export async function setMaintenance(on: boolean, message?: string) {
+  const rows = [{ name: "maintenance", value: on ? "1" : "0" }];
+  if (message !== undefined) {
+    rows.push({ name: "maintenance_message", value: message.trim().slice(0, MAINTENANCE_MESSAGE_MAX) });
+  }
+  for (const row of rows) {
+    await db()
+      .insert(config)
+      .values(row)
+      .onDuplicateKeyUpdate({ set: { value: row.value } });
+  }
+}
+
 export { THEME_CHOICES };

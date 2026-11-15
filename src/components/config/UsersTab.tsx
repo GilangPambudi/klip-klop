@@ -16,6 +16,7 @@ export interface UserRow {
     banned: boolean;
     admin: boolean;
     lastLoginAt: string;
+    lastIp: string | null;
 }
 
 type Flag = "unlimited" | "banned" | "admin";
@@ -80,12 +81,17 @@ export function UsersTab({ initialUsers, selfId, onCount, onFail }: UsersTabProp
 
     const needle = query.trim().toLowerCase();
     const shown = needle
-        ? users.filter((u) => u.name.toLowerCase().includes(needle) || u.id.toLowerCase().includes(needle))
+        ? users.filter(
+              (u) =>
+                  u.name.toLowerCase().includes(needle) ||
+                  u.id.toLowerCase().includes(needle) ||
+                  (u.lastIp ?? "").includes(needle),
+          )
         : users;
 
     return (
         <>
-            <Input placeholder="Search by name or ID" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <Input placeholder="Search by name, ID or IP" value={query} onChange={(e) => setQuery(e.target.value)} />
 
             {shown.length === 0 && <p className="text-xs sm:text-sm text-muted-foreground">No users found.</p>}
 
@@ -110,7 +116,10 @@ export function UsersTab({ initialUsers, selfId, onCount, onFail }: UsersTabProp
                                 {self && <span className="text-xs text-muted-foreground">(you)</span>}
                                 <span className="break-all text-xs text-muted-foreground">{user.id}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground">Last login {lastSeen(user.lastLoginAt)}</div>
+                            <div className="text-xs text-muted-foreground">
+                                Last login {lastSeen(user.lastLoginAt)}
+                                {user.lastIp && <span className="break-all"> from {user.lastIp}</span>}
+                            </div>
                             <div className="flex flex-wrap items-center gap-2 pt-1">
                                 <div className="flex items-center gap-2">
                                     <Input

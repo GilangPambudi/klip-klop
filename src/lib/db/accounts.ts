@@ -16,7 +16,7 @@ interface Profile {
 export async function touchUser({ id, provider, name, image, unlimited }: Profile) {
   const now = new Date();
   const { startingCredits } = await getConfig();
-  await db()
+  const [result] = await db()
     .insert(users)
     .values({
       id,
@@ -30,6 +30,7 @@ export async function touchUser({ id, provider, name, image, unlimited }: Profil
     })
     // Credits, unlimited and banned are deliberately left alone on later logins.
     .onDuplicateKeyUpdate({ set: { name, image, lastLoginAt: now } });
+  return result.affectedRows === 1;
 }
 
 export interface Account {

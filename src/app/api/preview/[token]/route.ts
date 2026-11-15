@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import { Readable } from "stream";
+import { gate } from "@/lib/gate";
 import { previewPath } from "@/lib/preview";
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
+  const { denied } = await gate(req);
+  if (denied) return denied;
+
   const { token } = await params;
   const filePath = previewPath(token);
   if (!filePath) {

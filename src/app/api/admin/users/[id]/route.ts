@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { currentAdmin } from "@/auth";
-import { listUsers, updateUser, type UserChanges } from "@/lib/db/accounts";
+import { updateUser, type UserChanges } from "@/lib/db/accounts";
+import { usersForAdmin } from "@/lib/admin-users";
 
 const FLAGS = ["unlimited", "banned", "admin"] as const;
 const MAX_CREDITS = 1_000_000;
@@ -47,5 +48,5 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   }
 
   await updateUser(id, changes);
-  return NextResponse.json(await listUsers());
+  return NextResponse.json(await usersForAdmin());
 }

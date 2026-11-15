@@ -19,14 +19,17 @@ const state: GuardState = (globalGuard.__klipKlopGuard ??= {
   busyAccounts: new Set<string>(),
 });
 
-export function clientIp(req: NextRequest) {
-  const forwarded = req.headers.get("x-forwarded-for");
+export function ipFromForwarded(forwarded: string | null) {
   const last = forwarded
     ?.split(",")
     .map((ip) => ip.trim())
     .filter(Boolean)
     .at(-1);
   return last || "local";
+}
+
+export function clientIp(req: NextRequest) {
+  return ipFromForwarded(req.headers.get("x-forwarded-for"));
 }
 
 export function tierOf(account: { credits: number | null; admin: boolean } | null): Tier {

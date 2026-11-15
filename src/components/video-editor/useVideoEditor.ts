@@ -266,6 +266,7 @@ export function useVideoEditor(
         body: JSON.stringify({ url }),
       });
       const data = await res.json();
+      if (data.maintenance) router.refresh();
       if (!res.ok) throw new Error(data.error || "Failed to read video info");
 
       setTitle(data.title || "");
@@ -416,6 +417,7 @@ export function useVideoEditor(
       const data = await res.json();
       // The server reports the balance on success and when it has run out.
       if (typeof data.credits === "number") setCredits(data.credits);
+      if (data.maintenance) router.refresh();
       if (!res.ok) throw new Error(data.error || "Failed");
       return data;
     });

@@ -3,11 +3,15 @@ import fs from "fs";
 import path from "path";
 import { resolveLink, sweepExpired } from "@/lib/links";
 import { contentTypeFor } from "@/lib/formats";
+import { gate } from "@/lib/gate";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ token: string }> },
 ) {
+  const { denied } = await gate(req);
+  if (denied) return denied;
+
   await sweepExpired();
 
   const { token } = await params;

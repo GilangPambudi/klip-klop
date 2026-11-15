@@ -15,7 +15,16 @@ test("valid rows are used", () => {
       default_theme: "neon-dark",
       retention_hours: "1.5",
     }),
-    { defaultHeight: 720, defaultTheme: "neon-dark", retentionHours: 1.5 },
+    {
+      ...DEFAULTS,
+      defaultHeight: 720,
+      defaultTheme: "neon-dark",
+      retentionHours: 1.5,
+    },
+  );
+  assert.deepEqual(
+    parseConfig({ preview_retries: "0", starting_credits: "10", preview_max_mb: "50" }),
+    { ...DEFAULTS, previewRetries: 0, startingCredits: 10, previewMaxMb: 50 },
   );
   assert.equal(parseConfig({ default_theme: "neon" }).defaultTheme, "neon");
 });
@@ -34,6 +43,11 @@ test("nonsense falls back instead of breaking the site", () => {
     DEFAULTS,
   );
   assert.equal(parseConfig({ retention_hours: "soon" }).retentionHours, 24);
+  assert.deepEqual(
+    parseConfig({ preview_retries: "11", starting_credits: "-1", preview_max_mb: "0" }),
+    DEFAULTS,
+  );
+  assert.equal(parseConfig({ preview_retries: "1.5" }).previewRetries, 3);
 });
 
 test("a family follows the device, in that family's light and dark", () => {

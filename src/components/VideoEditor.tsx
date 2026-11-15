@@ -15,9 +15,10 @@ interface VideoEditorProps {
     providers: string[];
     /** Site setting: preselect the best resolution at or below this. null = the highest available. */
     defaultHeight: number | null;
+    previewRetries: number;
 }
 
-export default function VideoEditor({ user, providers, defaultHeight }: VideoEditorProps) {
+export default function VideoEditor({ user, providers, defaultHeight, previewRetries }: VideoEditorProps) {
     const authEnabled = providers.length > 0;
     const { state, setters, actions, contentRef } = useVideoEditor(authEnabled && !user, user?.credits ?? null, defaultHeight);
 
@@ -54,6 +55,7 @@ export default function VideoEditor({ user, providers, defaultHeight }: VideoEdi
                         onClosePreview={() => setters.setDownloadedFilename(null)}
                         onPlayer={actions.handlePlayer}
                         trim={state.trim}
+                        loadRetries={previewRetries}
                     />
                 </div>
 

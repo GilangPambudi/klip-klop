@@ -12,6 +12,7 @@ interface VideoPlayerProps {
   onPlayer?: (player: PlayerHandle | null) => void;
   /** Trim range in seconds, highlighted on the progress bar. end = 0 means to the end. */
   range?: { start: number; end: number };
+  loadRetries?: number;
 }
 
 const SKIP_SECONDS = 5;
@@ -32,7 +33,7 @@ const pct = (value: number, total: number) =>
  * which overlays custom controls on a YouTube embed). Native so the same player
  * can also play finished downloads, which a YouTube embed cannot.
  */
-export function VideoPlayer({ src, className, onPlayer, range }: VideoPlayerProps) {
+export function VideoPlayer({ src, className, onPlayer, range, loadRetries = 0 }: VideoPlayerProps) {
   const onPlayerRef = useRef(onPlayer);
   useEffect(() => {
     onPlayerRef.current = onPlayer;
@@ -64,11 +65,22 @@ export function VideoPlayer({ src, className, onPlayer, range }: VideoPlayerProp
     events.forEach((e) => video.addEventListener(e, sync));
     sync();
 
+    let retries = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    const retry = () => {
+      if (retries >= loadRetries) return;
+      retries += 1;
+      retryTimer = setTimeout(() => video.load(), retries * 1000);
+    };
+    video.addEventListener("error", retry);
+
     return () => {
       events.forEach((e) => video.removeEventListener(e, sync));
+      video.removeEventListener("error", retry);
+      clearTimeout(retryTimer);
       onPlayerRef.current?.(null);
     };
-  }, [src]);
+  }, [src, loadRetries]);
 
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement === wrapRef.current);

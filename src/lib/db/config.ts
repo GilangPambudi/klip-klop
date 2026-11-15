@@ -15,12 +15,26 @@ export interface SiteConfig {
   defaultTheme: string;
   /** Hours before a finished download is deleted. */
   retentionHours: number;
+  previewRetries: number;
+  startingCredits: number;
+  previewMaxMb: number;
 }
 
 export const DEFAULTS: SiteConfig = {
   defaultHeight: null,
   defaultTheme: "mono",
   retentionHours: 24,
+  previewRetries: 3,
+  startingCredits: 3,
+  previewMaxMb: 200,
+};
+
+export const MAX_PREVIEW_RETRIES = 10;
+
+const wholeNumber = (raw: string | undefined, min: number, max = Infinity) => {
+  if (raw === undefined || raw.trim() === "") return null;
+  const value = Number(raw);
+  return Number.isInteger(value) && value >= min && value <= max ? value : null;
 };
 
 /**
@@ -60,6 +74,11 @@ export function parseConfig(values: Record<string, string>): SiteConfig {
       : DEFAULTS.defaultTheme,
     retentionHours:
       Number.isFinite(hours) && hours > 0 ? hours : DEFAULTS.retentionHours,
+    previewRetries:
+      wholeNumber(values.preview_retries, 0, MAX_PREVIEW_RETRIES) ?? DEFAULTS.previewRetries,
+    startingCredits:
+      wholeNumber(values.starting_credits, 0) ?? DEFAULTS.startingCredits,
+    previewMaxMb: wholeNumber(values.preview_max_mb, 1) ?? DEFAULTS.previewMaxMb,
   };
 }
 

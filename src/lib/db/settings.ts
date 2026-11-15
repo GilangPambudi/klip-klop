@@ -1,14 +1,24 @@
 import { inArray } from "drizzle-orm";
 import { db } from "./index";
 import { config } from "./schema";
-import { THEME_IDS } from "./config";
+import { MAX_PREVIEW_RETRIES, THEME_IDS } from "./config";
 
 export const SETTING_NAMES = [
   "default_height",
   "default_theme",
   "retention_hours",
   "instagram_sessionid",
+  "preview_retries",
+  "starting_credits",
+  "preview_max_mb",
 ] as const;
+
+const wholeNumberSetting = (value: string, min: number, max = Infinity) => {
+  const number = Number(value);
+  return value !== "" && Number.isInteger(number) && number >= min && number <= max
+    ? String(number)
+    : null;
+};
 
 export type SettingName = (typeof SETTING_NAMES)[number];
 export type Settings = Record<SettingName, string>;
@@ -31,6 +41,12 @@ export function validateSetting(name: SettingName, raw: string): string | null {
     }
     case "instagram_sessionid":
       return value === "" || /^[\w%:.-]+$/.test(value) ? value : null;
+    case "preview_retries":
+      return wholeNumberSetting(value, 0, MAX_PREVIEW_RETRIES);
+    case "starting_credits":
+      return wholeNumberSetting(value, 0);
+    case "preview_max_mb":
+      return wholeNumberSetting(value, 1);
   }
 }
 

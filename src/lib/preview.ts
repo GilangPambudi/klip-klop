@@ -2,13 +2,13 @@ import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { cookieArgs } from "./cookies";
+import { getConfig } from "./db/config";
 import { DOWNLOAD_DIR } from "./downloader";
 import { withProxies } from "./proxies";
 import { resolveBinary, runTool, YTDLP_COMMON_ARGS } from "./runtime";
 
 const PREVIEW_DIR = path.join(DOWNLOAD_DIR, ".preview");
 const PREVIEW_TTL_MS = 60 * 60 * 1000;
-const PREVIEW_MAX_SIZE = "200M";
 
 export function previewPath(token: string) {
   if (!/^[a-f0-9]{32}$/.test(token)) return null;
@@ -33,6 +33,7 @@ export async function probeWithPreview(url: string) {
   const token = crypto.randomBytes(16).toString("hex");
 
   const cookies = await cookieArgs(url);
+  const { previewMaxMb } = await getConfig();
   const { stdout } = await withProxies(url, (proxyArgs) => runTool("yt-dlp", [
     ...YTDLP_COMMON_ARGS,
     ...cookies,
@@ -46,7 +47,7 @@ export async function probeWithPreview(url: string) {
     "-S",
     "vcodec:h264",
     "--max-filesize",
-    PREVIEW_MAX_SIZE,
+    `${previewMaxMb}M`,
     "--remux-video",
     "mp4",
     "--ffmpeg-location",

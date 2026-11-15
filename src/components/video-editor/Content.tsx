@@ -16,9 +16,10 @@ interface ContentProps {
     onPlayer?: (player: PlayerHandle | null) => void;
     /** Trim range in seconds, marked on the source preview's progress bar. */
     trim: { start: number; end: number };
+    loadRetries: number;
 }
 
-export function Content({ downloadedFilename, previewUrl, isProbing, onClosePreview, onPlayer, trim }: ContentProps) {
+export function Content({ downloadedFilename, previewUrl, isProbing, onClosePreview, onPlayer, trim, loadRetries }: ContentProps) {
     const src = downloadedFilename
         ? `/api/video?file=${downloadedFilename}`
         : previewUrl;
@@ -38,6 +39,7 @@ export function Content({ downloadedFilename, previewUrl, isProbing, onClosePrev
                     src={src}
                     className="absolute inset-0 h-full w-full"
                     onPlayer={onPlayer}
+                    loadRetries={loadRetries}
                     // A finished download is already the clip, so only the source shows the range.
                     range={downloadedFilename ? undefined : trim}
                 />

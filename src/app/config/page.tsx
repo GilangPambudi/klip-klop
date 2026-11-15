@@ -23,7 +23,7 @@ export default async function ConfigPage() {
 
   return (
     <main className="min-h-screen bg-background flex justify-center px-3 pt-3 pb-20 lg:px-4 lg:py-10">
-      <div className="w-full max-w-3xl">
+      <div className="w-full md:max-w-[90%] sm:max-w-full">
         <ConfigPanel
           initialSettings={settings}
           initialProxies={proxies}

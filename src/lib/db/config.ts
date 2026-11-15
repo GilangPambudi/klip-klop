@@ -25,6 +25,9 @@ export interface SiteConfig {
   infoPer10minMember: number;
   maxJobs: number;
   minFreeDiskGb: number;
+  maxClipMinutes: number;
+  downloadTimeoutMinutes: number;
+  downloadMaxMb: number;
 }
 
 const wholeNumber = (raw: string | undefined, min: number, max = Infinity) => {
@@ -82,6 +85,9 @@ export function parseConfig(values: Record<string, string>): SiteConfig {
     infoPer10minMember: numberSetting(values, "info_per_10min_member"),
     maxJobs: numberSetting(values, "max_jobs"),
     minFreeDiskGb: numberSetting(values, "min_free_disk_gb"),
+    maxClipMinutes: numberSetting(values, "max_clip_minutes"),
+    downloadTimeoutMinutes: numberSetting(values, "download_timeout_minutes"),
+    downloadMaxMb: numberSetting(values, "download_max_mb"),
   };
 }
 

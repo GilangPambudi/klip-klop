@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs";
-import { streamTool, YTDLP_COMMON_ARGS, resolveBinary } from "./runtime";
+import { streamTool, YTDLP_COMMON_ARGS, resolveBinary, type RunOptions } from "./runtime";
 import type { AudioFormat } from "./formats";
 import { uniqueBase } from "./filenames";
 import { cookieArgs } from "./cookies";
@@ -18,7 +18,14 @@ interface DownloadOptions {
   height?: number;
   /** Extract audio only in this format. Omit for an MP4 video. */
   audio?: AudioFormat;
+  /** yt-dlp --match-filter; a video that fails it is refused with FILTERED_OUT. */
+  matchFilter?: string;
+  maxMb?: number;
+  run?: RunOptions;
 }
+
+export const FILTERED_OUT =
+  "This clip is longer than the limit, or the video is a live stream.";
 
 // Always cut from the m4a stream: --download-sections ignores the start time on
 // YouTube's webm/opus audio (a 10s–13s clip came out as 0s–13s). Only m4a skips re-encoding.
@@ -40,6 +47,9 @@ export async function downloadPart({
   filename,
   height,
   audio,
+  matchFilter,
+  maxMb,
+  run,
 }: DownloadOptions) {
   if (!fs.existsSync(DOWNLOAD_DIR)) {
     fs.mkdirSync(DOWNLOAD_DIR, { recursive: true });
@@ -111,6 +121,13 @@ export async function downloadPart({
   if (downloadSections) {
     args.push("--download-sections", downloadSections);
   }
+  if (matchFilter) {
+    args.push("--match-filter", matchFilter);
+  }
+  const sizeLimited = Boolean(maxMb) && !downloadSections;
+  if (sizeLimited) {
+    args.push("--max-filesize", `${maxMb}M`);
+  }
 
   // ponytail: resolveBinary already checks platform and falls back to system PATH
   args.push("--ffmpeg-location", resolveBinary("ffmpeg").command);
@@ -118,7 +135,7 @@ export async function downloadPart({
   console.log(`> Downloading: ${url} [${from} - ${to}] @ ${audio ?? height ?? "best"}`);
 
   const { stdout } = await withProxies(url, (proxyArgs) =>
-    streamTool("yt-dlp", [...args, ...proxyArgs]),
+    streamTool("yt-dlp", [...args, ...proxyArgs], run),
   );
 
   // Progress output shares stdout with --print, so match the path itself
@@ -130,6 +147,11 @@ export async function downloadPart({
     .pop();
 
   if (!printedPath) {
+    if (matchFilter && sizeLimited) {
+      throw new Error(`This video is too long, bigger than ${maxMb} MB, or a live stream.`);
+    }
+    if (matchFilter) throw new Error(FILTERED_OUT);
+    if (sizeLimited) throw new Error(`The file would be bigger than ${maxMb} MB.`);
     throw new Error("yt-dlp finished but reported no output file");
   }
 

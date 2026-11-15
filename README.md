@@ -128,6 +128,11 @@ Abuse limits, also on `/config`. Unlimited and admin accounts skip all of them e
 | `info_per_10min_member` | `30` | Video loads per 10 minutes for one signed-in account |
 | `max_jobs` | `3` | Loads and downloads running at once on the whole server |
 | `min_free_disk_gb` | `5` | Below this much free disk, loads and downloads are refused for everyone |
+| `max_clip_minutes` | `10` | Longest clip a limited account can download; an open End counts to the end of the video |
+| `download_timeout_minutes` | `10` | A limited account's download is stopped after this long, and the credit comes back |
+| `download_max_mb` | `500` | Largest whole-video download for a limited account (cut clips are bounded by length instead) |
+
+A limited account also runs one download at a time, cannot download live streams, and its download stops when the tab is closed.
 
 Loads by signed-out and limited accounts stop after 3 minutes, and a load stops as soon as the visitor closes the tab.
 

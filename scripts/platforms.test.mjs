@@ -25,6 +25,13 @@ test("reads TikTok videos and short links", () => {
   assert.equal(key("https://www.tiktok.com/t/ZTabcdefg/"), "tiktok:ZTabcdefg");
 });
 
+test("reads TikTok photo slideshows", () => {
+  assert.equal(
+    key("https://www.tiktok.com/@scout2015/photo/7312345678901234567?is_from_webapp=1"),
+    "tiktok:7312345678901234567",
+  );
+});
+
 test("reads Instagram posts and reels", () => {
   assert.equal(key("https://www.instagram.com/p/aye83DjauH/"), "instagram:aye83DjauH");
   assert.equal(key("https://www.instagram.com/reel/C8abcDEfgHi/?igsh=xyz"), "instagram:C8abcDEfgHi");

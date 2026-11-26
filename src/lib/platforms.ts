@@ -27,7 +27,7 @@ export const PLATFORMS: Platform[] = [
     key: (url, host) =>
       host === "vm.tiktok.com" || host === "vt.tiktok.com"
         ? first(url.pathname, /^\/([A-Za-z0-9]{8,})\/?$/)
-        : (first(url.pathname, /\/video\/(\d{15,})(?:\/|$)/) ??
+        : (first(url.pathname, /\/(?:video|photo)\/(\d{15,})(?:\/|$)/) ??
           first(url.pathname, /^\/t\/([A-Za-z0-9]{8,})\/?$/)),
   },
   {

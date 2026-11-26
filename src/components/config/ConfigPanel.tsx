@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Pencil, Plus, Power, Trash2, Upload, Zap } from "lucide-react";
@@ -26,6 +26,8 @@ import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { Settings } from "@/lib/db/settings";
 import { NUMBER_FIELDS, NUMBER_GROUPS } from "@/lib/setting-fields";
 import type { YoutubeCookieStatus } from "@/lib/cookies";
+import { fieldLabel, Section } from "@/components/config/Section";
+import { YtdlpSection } from "@/components/config/YtdlpSection";
 import { UsersTab, type UserRow } from "@/components/config/UsersTab";
 import { BlockedTab, type BlockedRow } from "@/components/config/BlockedTab";
 import { cn } from "@/lib/utils";
@@ -75,22 +77,8 @@ interface Maintenance {
     message: string;
 }
 
-const fieldLabel = "text-muted-foreground text-xs sm:text-sm";
-
 const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-
-function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
-    return (
-        <section className="flex flex-col gap-3 rounded-base border-2 border-border bg-secondary-background p-3">
-            <div className="flex flex-col gap-0.5">
-                <h4 className="font-heading">{title}</h4>
-                {hint && <p className="text-xs sm:text-sm text-muted-foreground">{hint}</p>}
-            </div>
-            {children}
-        </section>
-    );
-}
 
 function cookieSummary(status: YoutubeCookieStatus) {
     if (!status.configured) return "YT_DLP_COOKIES is not set in .env, so YouTube goes without cookies.";
@@ -328,6 +316,8 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                 </>
                             )}
                         </Section>
+
+                        <YtdlpSection onFail={(title, err) => fail(title)(err)} />
 
                         <Section title="General" hint="Defaults for the editor and how long finished downloads stay on the server.">
                         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

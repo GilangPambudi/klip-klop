@@ -7,6 +7,14 @@ export const YTDLP_COMMON_ARGS = [
   "node",
 ];
 
+export const INFO_FORMAT_ARGS = [
+  "--extractor-args",
+  "youtube:player_client=default,web_embedded",
+  "-g",
+  "-f",
+  "best[ext=mp4][vcodec!=none][acodec!=none][protocol=https]/best",
+];
+
 export function describeToolError(error: unknown, fallback: string) {
   const text = error instanceof Error ? error.message : "";
   const errors = [...text.matchAll(/ERROR:\s*(.+)/g)];

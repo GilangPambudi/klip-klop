@@ -3,7 +3,7 @@ import { cookieArgs } from "@/lib/cookies";
 import { logEvent } from "@/lib/db/events";
 import { gate } from "@/lib/gate";
 import { allowHit, freeDiskGb, MESSAGES, startJob, tierOf } from "@/lib/guard";
-import { describeToolError, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
+import { describeToolError, INFO_FORMAT_ARGS, runTool, YTDLP_COMMON_ARGS } from "@/lib/runtime";
 import { sweepExpired } from "@/lib/links";
 import { parseLink } from "@/lib/platforms";
 import { probeWithPreview } from "@/lib/preview";
@@ -83,11 +83,7 @@ export async function POST(req: NextRequest) {
       ...proxyArgs,
       "--no-playlist",
       "--no-warnings",
-      "--extractor-args",
-      "youtube:player_client=default,web_embedded",
-      "-g",
-      "-f",
-      "best[ext=mp4][vcodec!=none][acodec!=none][protocol=https]/best",
+      ...INFO_FORMAT_ARGS,
       "--print",
       "%(title)s",
       "--print",

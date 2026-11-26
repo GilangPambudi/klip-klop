@@ -25,9 +25,12 @@ export function describeToolError(error: unknown, fallback: string) {
   return line.replace(/^\[[^\]]+\]\s*[^:\s]+:\s*/, "").split(/(?<=\.)\s/)[0];
 }
 
-const INSTALL_HINTS: Record<string, string> = {
+export type ToolName = "yt-dlp" | "ffmpeg" | "gallery-dl";
+
+const INSTALL_HINTS: Record<ToolName, string> = {
   "yt-dlp": "Install it and make sure `yt-dlp` is available on PATH.",
   ffmpeg: "Install it and make sure `ffmpeg` is available on PATH.",
+  "gallery-dl": "Install it and make sure `gallery-dl` is available on PATH.",
 };
 
 export interface ResolvedBinary {
@@ -62,7 +65,7 @@ function searchPath(name: string): string | null {
   return null;
 }
 
-export function resolveBinary(name: "yt-dlp" | "ffmpeg"): ResolvedBinary {
+export function resolveBinary(name: ToolName): ResolvedBinary {
   const cached = cache.get(name);
   if (cached) return cached;
 
@@ -89,7 +92,7 @@ export const STOPPED_TIME_LIMIT = "Stopped: it took longer than the time limit."
 export const STOPPED_CANCELLED = "Cancelled.";
 
 function launch(
-  name: "yt-dlp" | "ffmpeg",
+  name: ToolName,
   args: string[],
   { signal, timeoutMs }: RunOptions,
   echo: boolean,
@@ -154,10 +157,10 @@ function launch(
   });
 }
 
-export function runTool(name: "yt-dlp" | "ffmpeg", args: string[], options: RunOptions = {}) {
+export function runTool(name: ToolName, args: string[], options: RunOptions = {}) {
   return launch(name, args, options, false);
 }
 
-export function streamTool(name: "yt-dlp" | "ffmpeg", args: string[], options: RunOptions = {}) {
+export function streamTool(name: ToolName, args: string[], options: RunOptions = {}) {
   return launch(name, args, options, true);
 }

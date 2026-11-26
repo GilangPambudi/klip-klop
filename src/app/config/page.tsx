@@ -6,6 +6,7 @@ import { getConfig } from "@/lib/db/config";
 import { listBlockedIps } from "@/lib/db/events";
 import { readSettings } from "@/lib/db/settings";
 import { listProxies } from "@/lib/proxies";
+import { youtubeCookieStatus } from "@/lib/cookies";
 
 export const metadata = { title: "Config · Klip-Klop" };
 
@@ -34,6 +35,7 @@ export default async function ConfigPage() {
             reason: b.reason,
             expiresAt: b.expiresAt.toISOString(),
           }))}
+          initialYoutubeCookies={youtubeCookieStatus()}
           selfId={admin.id}
         />
       </div>

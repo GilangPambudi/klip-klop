@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Pencil, Plus, Power, Trash2, Zap } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Eye, EyeOff, Pencil, Plus, Power, Trash2, Upload, Zap } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,7 +24,8 @@ import {
 import { ErrorDialog, type Failure } from "@/components/video-editor/ErrorDialog";
 import { PLATFORMS, platformLabel, type PlatformId } from "@/lib/platforms";
 import type { Settings } from "@/lib/db/settings";
-import { NUMBER_FIELDS } from "@/lib/setting-fields";
+import { NUMBER_FIELDS, NUMBER_GROUPS } from "@/lib/setting-fields";
+import type { YoutubeCookieStatus } from "@/lib/cookies";
 import { UsersTab, type UserRow } from "@/components/config/UsersTab";
 import { BlockedTab, type BlockedRow } from "@/components/config/BlockedTab";
 import { cn } from "@/lib/utils";
@@ -74,16 +75,47 @@ interface Maintenance {
     message: string;
 }
 
+const fieldLabel = "text-muted-foreground text-xs sm:text-sm";
+
+const formatDate = (iso: string) =>
+    new Date(iso).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+
+function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+    return (
+        <section className="flex flex-col gap-3 rounded-base border-2 border-border bg-secondary-background p-3">
+            <div className="flex flex-col gap-0.5">
+                <h4 className="font-heading">{title}</h4>
+                {hint && <p className="text-xs sm:text-sm text-muted-foreground">{hint}</p>}
+            </div>
+            {children}
+        </section>
+    );
+}
+
+function cookieSummary(status: YoutubeCookieStatus) {
+    if (!status.configured) return "YT_DLP_COOKIES is not set in .env, so YouTube goes without cookies.";
+    if (!status.exists) return "No cookie file yet.";
+    const parts = [`${status.cookies} youtube.com cookies`, `updated ${formatDate(status.updatedAt!)}`];
+    if (status.expiresAt) {
+        parts.push(new Date(status.expiresAt) < new Date() ? "login cookie expired" : `login expires ${formatDate(status.expiresAt)}`);
+    }
+    return parts.join(" · ");
+}
+
 interface ConfigPanelProps {
     initialSettings: Settings;
     initialProxies: ProxyRow[];
     initialUsers: UserRow[];
     initialMaintenance: Maintenance;
     initialBlocked: BlockedRow[];
+    initialYoutubeCookies: YoutubeCookieStatus;
     selfId: string;
 }
 
-export function ConfigPanel({ initialSettings, initialProxies, initialUsers, initialMaintenance, initialBlocked, selfId }: ConfigPanelProps) {
+export function ConfigPanel({ initialSettings, initialProxies, initialUsers, initialMaintenance, initialBlocked, initialYoutubeCookies, selfId }: ConfigPanelProps) {
+    const [ytCookies, setYtCookies] = useState(initialYoutubeCookies);
+    const [ytText, setYtText] = useState("");
+    const [ytBusy, setYtBusy] = useState(false);
     const [maintenance, setMaintenance] = useState(initialMaintenance);
     const [maintenanceBusy, setMaintenanceBusy] = useState(false);
     const [blockedCount, setBlockedCount] = useState(initialBlocked.length);
@@ -116,6 +148,23 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
             fail("Could not save settings")(err);
         } finally {
             setSaving(false);
+        }
+    };
+
+    const loadCookieFile = async (file: File | undefined) => {
+        if (file) setYtText(await file.text());
+    };
+
+    const saveYoutubeCookies = async () => {
+        setYtBusy(true);
+        try {
+            setYtCookies(await send<YoutubeCookieStatus>("/api/admin/youtube-cookies", "PUT", { text: ytText }));
+            setYtText("");
+            toast.success("YouTube cookies replaced");
+        } catch (err) {
+            fail("Could not save YouTube cookies")(err);
+        } finally {
+            setYtBusy(false);
         }
     };
 
@@ -211,11 +260,11 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                     </TabsList>
 
                     <TabsContent value="settings" className="flex flex-col gap-4 pt-2">
-                        <div className="flex flex-col gap-3 rounded-base border-2 border-border bg-secondary-background p-3">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="font-heading flex-1">
-                                    {maintenance.on ? "● Maintenance is on" : "○ Maintenance is off"}
-                                </span>
+                        <Section
+                            title={maintenance.on ? "● Maintenance is on" : "○ Maintenance is off"}
+                            hint="While it is on, visitors see a maintenance page and every load and download is refused. Admin accounts keep working. Saves right away."
+                        >
+                            <div>
                                 <Button
                                     size="sm"
                                     variant={maintenance.on ? "default" : "neutral"}
@@ -225,11 +274,8 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                     <Power /> {maintenance.on ? "Turn off" : "Turn on"}
                                 </Button>
                             </div>
-                            <p className="text-xs sm:text-sm text-muted-foreground">
-                                While it is on, visitors see a maintenance page and every load and download is refused. Admin accounts keep working.
-                            </p>
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="maintenance-message" className="text-muted-foreground text-xs sm:text-sm">Message (empty = the default)</Label>
+                                <Label htmlFor="maintenance-message" className={fieldLabel}>Message (empty = the default)</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         id="maintenance-message"
@@ -243,10 +289,50 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                        <div className="grid gap-4 sm:grid-cols-2">
+                        </Section>
+
+                        <Section
+                            title="YouTube cookies"
+                            hint="When YouTube asks to sign in or the cookies expire, export a fresh cookies.txt (Netscape format) from a signed-in browser and upload or paste it here. Replaces the file right away."
+                        >
+                            <p className="text-xs sm:text-sm">{cookieSummary(ytCookies)}</p>
+                            {ytCookies.configured && (
+                                <>
+                                    <textarea
+                                        aria-label="YouTube cookies.txt"
+                                        rows={4}
+                                        spellCheck={false}
+                                        autoComplete="off"
+                                        placeholder="# Netscape HTTP Cookie File&#10;.youtube.com	TRUE	/	TRUE	..."
+                                        value={ytText}
+                                        onChange={(e) => setYtText(e.target.value)}
+                                        className="w-full rounded-base border-2 border-border bg-background px-3 py-2 font-mono text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                                    />
+                                    <div className="flex flex-wrap justify-end gap-2">
+                                        <label className={cn(buttonVariants({ variant: "neutral", size: "sm" }), "cursor-pointer")}>
+                                            <Upload /> Choose .txt
+                                            <input
+                                                type="file"
+                                                accept=".txt,text/plain"
+                                                className="sr-only"
+                                                onChange={(e) => {
+                                                    void loadCookieFile(e.target.files?.[0]);
+                                                    e.target.value = "";
+                                                }}
+                                            />
+                                        </label>
+                                        <Button size="sm" disabled={ytBusy || !ytText.trim()} onClick={() => void saveYoutubeCookies()}>
+                                            {ytBusy ? "Saving..." : "Replace cookies"}
+                                        </Button>
+                                    </div>
+                                </>
+                            )}
+                        </Section>
+
+                        <Section title="General" hint="Defaults for the editor and how long finished downloads stay on the server.">
+                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                             <div className="flex flex-col gap-1.5">
-                                <Label className="text-muted-foreground text-xs sm:text-sm">Default quality</Label>
+                                <Label className={fieldLabel}>Default quality</Label>
                                 <Select value={settings.default_height} onValueChange={set("default_height")}>
                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -257,7 +343,7 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                 </Select>
                             </div>
                             <div className="flex flex-col gap-1.5">
-                                <Label className="text-muted-foreground text-xs sm:text-sm">Default theme</Label>
+                                <Label className={fieldLabel}>Default theme</Label>
                                 <Select value={settings.default_theme} onValueChange={set("default_theme")}>
                                     <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
                                     <SelectContent>
@@ -268,11 +354,15 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                 </Select>
                             </div>
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="retention" className="text-muted-foreground text-xs sm:text-sm">Keep downloads (hours)</Label>
+                                <Label htmlFor="retention" className={fieldLabel}>Keep downloads (hours)</Label>
                                 <Input id="retention" inputMode="decimal" value={settings.retention_hours} onChange={(e) => set("retention_hours")(e.target.value)} />
                             </div>
+                        </div>
+                        </Section>
+
+                        <Section title="Instagram" hint="The sessionid cookie of a signed-in Instagram account, so posts that need a login can load.">
                             <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="igsession" className="text-muted-foreground text-xs sm:text-sm">Instagram sessionid</Label>
+                                <Label htmlFor="igsession" className={fieldLabel}>Instagram sessionid</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         id="igsession"
@@ -287,17 +377,23 @@ export function ConfigPanel({ initialSettings, initialProxies, initialUsers, ini
                                     </Button>
                                 </div>
                             </div>
-                            {NUMBER_FIELDS.map((field) => (
-                                <div key={field.name} className="flex flex-col gap-1.5">
-                                    <Label htmlFor={field.name} className="text-muted-foreground text-xs sm:text-sm">{field.label}</Label>
-                                    <Input id={field.name} inputMode="numeric" value={settings[field.name]} onChange={(e) => set(field.name)(e.target.value)} />
+                        </Section>
+
+                        {NUMBER_GROUPS.map((group) => (
+                            <Section key={group.id} title={group.title} hint={group.hint}>
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {NUMBER_FIELDS.filter((field) => field.group === group.id).map((field) => (
+                                        <div key={field.name} className="flex flex-col gap-1.5">
+                                            <Label htmlFor={field.name} className={fieldLabel}>{field.label}</Label>
+                                            <Input id={field.name} inputMode="numeric" value={settings[field.name]} onChange={(e) => set(field.name)(e.target.value)} />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                        <p className="text-xs sm:text-sm text-muted-foreground">
-                            Unlimited and admin accounts skip every limit except free disk.
-                        </p>
-                        <div className="flex justify-end">
+                            </Section>
+                        ))}
+
+                        <div className="flex items-center justify-end gap-3">
+                            <span className="text-xs sm:text-sm text-muted-foreground">Saves General, Instagram, Preview, Traffic and Accounts.</span>
                             <Button onClick={() => void saveSettings()} disabled={saving}>
                                 {saving ? "Saving..." : "Save"}
                             </Button>
